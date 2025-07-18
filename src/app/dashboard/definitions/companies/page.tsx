@@ -13,13 +13,11 @@ export default function CompaniesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [newCompanyName, setNewCompanyName] = useState("");
   
-  // 編輯狀態管理
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
 
   const router = useRouter();
 
-  // 檢查權限並載入資料
   useEffect(() => {
     const role = localStorage.getItem("role");
     if (role !== "admin") {
@@ -30,20 +28,17 @@ export default function CompaniesPage() {
     loadCompanies();
   }, [router]);
 
-  // 載入公司列表
   const loadCompanies = async () => {
     try {
       setIsLoading(true);
       const data = await getCompanies();
       setCompanies(data);
-    } catch (error) {
-      // 錯誤已在 api.ts 中處理
+    } catch (_error) { // 【修正處】
     } finally {
       setIsLoading(false);
     }
   };
   
-  // 處理新增
   const handleAdd = async () => {
     if (!newCompanyName.trim()) {
       toast.error("公司名稱不能為空");
@@ -54,10 +49,9 @@ export default function CompaniesPage() {
       toast.success("新增成功");
       setNewCompanyName("");
       loadCompanies();
-    } catch (error) {}
+    } catch (_error) {} // 【修正處】
   };
 
-  // 處理更新
   const handleUpdate = async (id: number) => {
     if (!editingName.trim()) {
       toast.error("公司名稱不能為空");
@@ -68,20 +62,18 @@ export default function CompaniesPage() {
         toast.success("更新成功");
         setEditingId(null);
         loadCompanies();
-    } catch(error) {}
+    } catch(_error) {} // 【修正處】
   }
 
-  // 處理刪除
   const handleDelete = async (id: number) => {
     if (!confirm("確定要刪除這家公司嗎？相關聯的使用者將無法登入。")) return;
     try {
         await deleteCompany(id);
         toast.success("刪除成功");
         loadCompanies();
-    } catch(error) {}
+    } catch(_error) {} // 【修正處】
   }
 
-  // 進入編輯模式
   const startEditing = (company: Company) => {
     setEditingId(company.id);
     setEditingName(company.name);
@@ -91,7 +83,6 @@ export default function CompaniesPage() {
     <main className="container mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold mb-6">公司資料管理</h1>
 
-      {/* 新增區塊 */}
       <div className="mb-8 p-6 border rounded-lg bg-card">
         <h2 className="text-lg font-semibold mb-4">新增公司</h2>
         <div className="flex gap-4">
@@ -104,7 +95,6 @@ export default function CompaniesPage() {
         </div>
       </div>
 
-      {/* 列表區塊 */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold border-b pb-2">公司列表</h2>
         {isLoading ? (
@@ -116,14 +106,12 @@ export default function CompaniesPage() {
               className="flex items-center justify-between border p-3 rounded-lg bg-card/50"
             >
               {editingId === company.id ? (
-                // 編輯模式
                 <Input
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                     className="flex-grow mr-4"
                 />
               ) : (
-                // 顯示模式
                 <span className="font-mono text-sm">{company.name}</span>
               )}
               
