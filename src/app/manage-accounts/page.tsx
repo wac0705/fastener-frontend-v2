@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// 擴充 Account 介面
 interface Account {
   id: number;
   username: string;
@@ -21,12 +20,19 @@ export default function ManageAccountsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("sales");
 
-  // --- 新增 state 來管理編輯狀態 ---
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingRole, setEditingRole] = useState("");
   const [editingIsActive, setEditingIsActive] = useState(true);
 
   const router = useRouter();
+
+  // --- 新增：登出處理函式 ---
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    toast.success("您已成功登出");
+    router.push("/login");
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -54,16 +60,15 @@ export default function ManageAccountsPage() {
         throw new Error("取得帳號資料失敗");
       }
       const data = await res.json();
-      // 在這邊進行排序，確保 admin 帳號總是在最上面
       data.sort((a: Account, b: Account) => {
         if (a.role === 'admin') return -1;
         if (b.role === 'admin') return 1;
         return a.id - b.id;
       });
-      setAccounts(data || []); // 確保 data 不是 null
+      setAccounts(data || []);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "發生未知錯誤");
-      setAccounts([]); // 發生錯誤時清空
+      setAccounts([]);
     }
   };
 
@@ -130,7 +135,6 @@ export default function ManageAccountsPage() {
     }
   };
 
-  // --- 新增：處理更新帳號的函式 ---
   const handleUpdate = async (id: number) => {
     const token = localStorage.getItem("token");
     try {
@@ -151,7 +155,7 @@ export default function ManageAccountsPage() {
 
       if (res.ok) {
         toast.success("更新成功");
-        setEditingId(null); // 結束編輯模式
+        setEditingId(null);
         await fetchAccounts();
       } else {
         const errorData = await res.json();
@@ -162,14 +166,12 @@ export default function ManageAccountsPage() {
     }
   };
 
-  // --- 新增：進入編輯模式的函式 ---
   const startEditing = (account: Account) => {
     setEditingId(account.id);
     setEditingRole(account.role);
     setEditingIsActive(account.is_active);
   };
 
-  // --- 新增：取消編輯的函式 ---
   const cancelEditing = () => {
     setEditingId(null);
   };
@@ -184,7 +186,13 @@ export default function ManageAccountsPage() {
 
   return (
     <main className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl font-bold mb-6">帳號管理</h1>
+      {/* --- 修改此處，加入標題和登出按鈕 --- */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">帳號管理</h1>
+        <Button variant="outline" onClick={handleLogout}>
+          登出
+        </Button>
+      </div>
 
       <div className="mb-8 p-6 border rounded-lg bg-card">
         <h2 className="text-lg font-semibold mb-4">新增帳號</h2>
@@ -213,7 +221,6 @@ export default function ManageAccountsPage() {
         </div>
       </div>
 
-      {/* --- 修改帳號列表的渲染邏輯 --- */}
       <div className="space-y-3">
         {accounts.map((account) => (
           <div
@@ -264,7 +271,7 @@ export default function ManageAccountsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => startEditing(account)}
-                    disabled={account.id === 1} // 保護 ID 為 1 的帳號
+                    disabled={account.id === 1}
                   >
                     編輯
                   </Button>
@@ -272,7 +279,7 @@ export default function ManageAccountsPage() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDelete(account.id)}
-                    disabled={account.id === 1} // 保護 ID 為 1 的帳號
+                    disabled={account.id === 1}
                   >
                     刪除
                   </Button>
