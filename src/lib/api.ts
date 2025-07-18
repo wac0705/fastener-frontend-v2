@@ -8,13 +8,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
 
-  const headers = {
+  // 【修正處】明確定義 headers 的型別
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
-    (headers as any).Authorization = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   try {
