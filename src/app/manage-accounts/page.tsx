@@ -73,23 +73,24 @@ export default function ManageAccountsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts?id=${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    if (res.ok) {
-      toast.success("刪除成功");
-      fetchAccounts();
-    } else {
-      toast.error("刪除失敗");
+  const token = localStorage.getItem("token");
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts/${id}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
-  };
+  );
+  if (res.ok) {
+    toast.success("刪除成功");
+    fetchAccounts();
+  } else {
+    toast.error("刪除失敗");
+  }
+};
+
 
   if (loading) {
     return (
