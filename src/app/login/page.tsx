@@ -15,11 +15,12 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const res = await fetch("https://fastener-api.zeabur.app/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+// 修改後的程式碼
+const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username, password }),
+});
 
     const data = await res.json();
 
