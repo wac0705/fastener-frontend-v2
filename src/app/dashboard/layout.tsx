@@ -1,6 +1,7 @@
 // fastener-frontend-v2-main/src/app/dashboard/layout.tsx
 import Link from 'next/link';
-import { Home, Users, Building, Settings } from 'lucide-react';
+// 【修正處】移除了未使用的 'Home'
+import { Users, Building, Settings } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
