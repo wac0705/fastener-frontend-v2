@@ -1,6 +1,7 @@
 // fastener-frontend-v2-main/src/app/dashboard/layout.tsx
 import Link from 'next/link';
-import { Users, Building, Settings } from 'lucide-react';
+// 【新增】匯入 Package 圖示
+import { Users, Building, Settings, Package } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -8,10 +9,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const navItems = [
-    // 【修正處】更新連結路徑
     { href: "/dashboard/manage-accounts", icon: Users, label: "帳號管理" },
     { href: "/dashboard/definitions/companies", icon: Building, label: "公司資料" },
     { href: "/dashboard/definitions/customers", icon: Users, label: "客戶資料" },
+    // 【新增】產品類別管理頁面的連結
+    { href: "/dashboard/definitions/product-categories", icon: Package, label: "產品類別" },
   ];
 
   return (
