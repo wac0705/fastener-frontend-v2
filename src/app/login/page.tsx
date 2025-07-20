@@ -1,3 +1,4 @@
+// fastener-frontend-v2-main/src/app/login/page.tsx (修正並增加日誌)
 "use client";
 
 import { useState } from "react";
@@ -15,28 +16,46 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-// 修改後的程式碼
-const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/login`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ username, password }),
-});
+    // --- 增加日誌 ---
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE}/api/login`; // <-- 修正點：確保這裡是 /api/login
+    const requestBody = { username, password };
 
-    const data = await res.json();
+    console.log("🚀 準備發送登入請求...");
+    console.log("請求 URL:", apiUrl);
+    console.log("請求內容 (Body):", JSON.stringify(requestBody));
+    // ---------------
 
-    if (res.ok) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-      alert("✅ 登入成功");
+    try {
+      const res = await fetch(apiUrl, { // 使用 apiUrl 變數
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody), // 使用 requestBody 變數
+      });
 
-      // 根據角色導頁
-      if (data.role === "admin") {
-        router.push("/manage-accounts");
+      // --- 增加日誌 ---
+      console.log(`✅ 後端回應狀態碼: ${res.status}`);
+      // ---------------
+
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("✅ 登入成功，取得的回應:", data);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        alert("✅ 登入成功");
+
+        if (data.role === "admin") {
+          router.push("/manage-accounts");
+        } else {
+          router.push("/");
+        }
       } else {
-        router.push("/");
+        console.error("❌ 登入失敗，後端回應:", data);
+        setError(data.error || "登入失敗，請再試一次");
       }
-    } else {
-      setError(data.error || "登入失敗，請再試一次");
+    } catch (err) {
+      console.error("❌ 捕獲到網路請求錯誤:", err);
+      setError("無法連接到伺服器，請檢查網路連線或稍後再試。");
     }
   };
 
