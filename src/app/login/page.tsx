@@ -16,26 +16,27 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // --- 增加日誌 ---
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE}/api/login`; // <-- 修正點：確保這裡是 /api/login
+    // --- 修正點：自動移除 NEXT_PUBLIC_API_BASE 結尾可能多餘的斜線 ---
+    const baseUrl = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/$/, "");
+    const apiUrl = `${baseUrl}/api/login`;
+    // ----------------------------------------------------------------
+
     const requestBody = { username, password };
 
     console.log("🚀 準備發送登入請求...");
     console.log("請求 URL:", apiUrl);
     console.log("請求內容 (Body):", JSON.stringify(requestBody));
-    // ---------------
 
     try {
-      const res = await fetch(apiUrl, { // 使用 apiUrl 變數
+      const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody), // 使用 requestBody 變數
+        body: JSON.stringify(requestBody),
       });
 
-      // --- 增加日誌 ---
       console.log(`✅ 後端回應狀態碼: ${res.status}`);
-      // ---------------
-
+      
+      // 即使是 404 或 401，也嘗試解析 JSON，因為後端可能會回傳 { "error": "..." }
       const data = await res.json();
 
       if (res.ok) {
@@ -51,11 +52,11 @@ export default function LoginPage() {
         }
       } else {
         console.error("❌ 登入失敗，後端回應:", data);
-        setError(data.error || "登入失敗，請再試一次");
+        setError(data.error || `登入失敗 (${res.status})`);
       }
     } catch (err) {
       console.error("❌ 捕獲到網路請求錯誤:", err);
-      setError("無法連接到伺服器，請檢查網路連線或稍後再試。");
+      setError("無法連接到伺服器或解析回應失敗。");
     }
   };
 
