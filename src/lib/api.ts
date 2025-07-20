@@ -33,12 +33,36 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   }
 }
 
-// --- 公司 (Companies) 相關的 API ---
-export interface Company { id: number; name: string; created_at: string; updated_at: string; }
+// --- 公司 (Companies) 相關的 API (階層版) ---
+export interface Company {
+  id: number;
+  name: string;
+  // 【修正點 1】新增 parent_id，用來表示上層公司的 ID
+  parent_id: number | null; 
+  created_at: string;
+  updated_at: string;
+  // 【修正點 2】新增 children 陣列，用來存放所有子公司
+  children?: Company[]; 
+}
 export const getCompanies = (): Promise<Company[]> => fetchWithAuth("/api/definitions/companies");
-export const createCompany = (name: string): Promise<Company> => fetchWithAuth("/api/definitions/companies", { method: "POST", body: JSON.stringify({ name }) });
-export const updateCompany = (id: number, name: string): Promise<Company> => fetchWithAuth(`/api/definitions/companies/${id}`, { method: 'PUT', body: JSON.stringify({ name }) });
+
+// 【修正點 3】createCompany 現在需要傳送 name 和 parent_id
+export const createCompany = (data: { name: string; parent_id: number | null }): Promise<Company> => {
+    return fetchWithAuth("/api/definitions/companies", {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+};
+
+// 【修正點 4】updateCompany 的 payload 也需要更新 (暫時保持，待下一步實作編輯功能)
+export const updateCompany = (id: number, data: { name: string; parent_id: number | null }): Promise<Company> => {
+    return fetchWithAuth(`/api/definitions/companies/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    });
+};
 export const deleteCompany = (id: number): Promise<{ success: true }> => fetchWithAuth(`/api/definitions/companies/${id}`, { method: 'DELETE' });
+
 
 // --- 客戶 (Customers) 相關的 API ---
 export interface CustomerTransactionTerm { id: number; customer_id: number; company_id: number; incoterm: string; currency_code: string; }
@@ -52,25 +76,20 @@ export const deleteCustomer = (id: number): Promise<{ success: true }> => fetchW
 
 
 // --- 產品定義 (Product Definitions) 相關的 API ---
-
-// 產品主類別
 export interface ProductCategory { id: number; category_code: string; name: string; }
 export const getProductCategories = (): Promise<ProductCategory[]> => fetchWithAuth('/api/definitions/product-categories');
 export const createProductCategory = (data: Omit<ProductCategory, 'id'>): Promise<ProductCategory> => fetchWithAuth('/api/definitions/product-categories', { method: 'POST', body: JSON.stringify(data) });
 export const updateProductCategory = (id: number, data: Omit<ProductCategory, 'id'>): Promise<ProductCategory> => fetchWithAuth(`/api/definitions/product-categories/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProductCategory = (id: number): Promise<{ success: true }> => fetchWithAuth(`/api/definitions/product-categories/${id}`, { method: 'DELETE' });
 
-// 產品形狀
 export interface ProductShape { id: number; shape_code: string; name: string; }
 export const getProductShapes = (): Promise<ProductShape[]> => fetchWithAuth('/api/definitions/product-shapes');
 export const createProductShape = (data: Omit<ProductShape, 'id'>): Promise<ProductShape> => fetchWithAuth('/api/definitions/product-shapes', { method: 'POST', body: JSON.stringify(data) });
 
-// 產品功能
 export interface ProductFunction { id: number; function_code: string; name: string; }
 export const getProductFunctions = (): Promise<ProductFunction[]> => fetchWithAuth('/api/definitions/product-functions');
 export const createProductFunction = (data: Omit<ProductFunction, 'id'>): Promise<ProductFunction> => fetchWithAuth('/api/definitions/product-functions', { method: 'POST', body: JSON.stringify(data) });
 
-// 產品規格
 export interface ProductSpecification { id: number; spec_code: string; name: string; parent_id: number | null; }
 export const getProductSpecifications = (): Promise<ProductSpecification[]> => fetchWithAuth('/api/definitions/product-specifications');
 export const createProductSpecification = (data: Omit<ProductSpecification, 'id'>): Promise<ProductSpecification> => fetchWithAuth('/api/definitions/product-specifications', { method: 'POST', body: JSON.stringify(data) });
