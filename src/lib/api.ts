@@ -37,31 +37,24 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 export interface Company {
   id: number;
   name: string;
-  // 【修正點 1】新增 parent_id，用來表示上層公司的 ID
-  parent_id: number | null; 
+  parent_id: number | null;
   created_at: string;
   updated_at: string;
-  // 【修正點 2】新增 children 陣列，用來存放所有子公司
-  children?: Company[]; 
+  children?: Company[];
 }
 export const getCompanies = (): Promise<Company[]> => fetchWithAuth("/api/definitions/companies");
 
-// 【修正點 3】createCompany 現在需要傳送 name 和 parent_id
 export const createCompany = (data: { name: string; parent_id: number | null }): Promise<Company> => {
-    return fetchWithAuth("/api/definitions/companies", {
-        method: "POST",
-        body: JSON.stringify(data)
-    });
+    return fetchWithAuth("/api/definitions/companies", { method: "POST", body: JSON.stringify(data) });
 };
 
-// 【修正點 4】updateCompany 的 payload 也需要更新 (暫時保持，待下一步實作編輯功能)
-export const updateCompany = (id: number, data: { name: string; parent_id: number | null }): Promise<Company> => {
-    return fetchWithAuth(`/api/definitions/companies/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-    });
+export const updateCompany = (id: number, data: { name: string; parent_id: number | null }): Promise<{ message: string }> => {
+    return fetchWithAuth(`/api/definitions/companies/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 };
-export const deleteCompany = (id: number): Promise<{ success: true }> => fetchWithAuth(`/api/definitions/companies/${id}`, { method: 'DELETE' });
+
+export const deleteCompany = (id: number): Promise<{ message: string }> => fetchWithAuth(`/api/definitions/companies/${id}`, { method: 'DELETE' });
+
+// ... (其他 API 不變)
 
 
 // --- 客戶 (Customers) 相關的 API ---
