@@ -1,6 +1,5 @@
 // fastener-frontend-v2-main/src/app/dashboard/layout.tsx
 import Link from 'next/link';
-// 【修正處】移除了未使用的 'Home'
 import { Users, Building, Settings } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -9,10 +8,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const navItems = [
-    { href: "/manage-accounts", icon: Users, label: "帳號管理" },
+    // 【修正處】更新連結路徑
+    { href: "/dashboard/manage-accounts", icon: Users, label: "帳號管理" },
     { href: "/dashboard/definitions/companies", icon: Building, label: "公司資料" },
     { href: "/dashboard/definitions/customers", icon: Users, label: "客戶資料" },
-    // 未來可以繼續添加更多導覽項目
   ];
 
   return (
