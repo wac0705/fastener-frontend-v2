@@ -47,7 +47,7 @@ function Modal({ title, children, onClose }: { title: string, children: React.Re
 
 function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Partial<Company> | null, allCompanies: Company[], onSave: () => void, onCancel: () => void }) {
     const [name, setName] = useState(company?.name || '');
-    const [parentId, setParentId] = useState<number | null>(company?.parent_id || null);
+    const [parentId, setParentId] = useState<number | null>(company?.parent_id === undefined ? null : company.parent_id);
     const isEditing = company && company.id;
 
     const companyOptions = useMemo(() => flattenCompanies(allCompanies), [allCompanies]);
@@ -84,7 +84,12 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
                 >
                     <option value="">-- 無 (設為根層級) --</option>
                     {companyOptions.map(opt => (
-                        <option key={opt.id} value={opt.id} disabled={isEditing && opt.id === company.id}>
+                        <option 
+                            key={opt.id} 
+                            value={opt.id} 
+                            // 【THE FIX】Ensure the expression is always a boolean
+                            disabled={!!(isEditing && opt.id === company.id)}
+                        >
                            {'\u00A0'.repeat(opt.level * 4)}{opt.name}
                         </option>
                     ))}
