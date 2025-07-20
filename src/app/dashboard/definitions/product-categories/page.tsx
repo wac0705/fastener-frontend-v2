@@ -15,7 +15,7 @@ import {
 } from "@/lib/api";
 import { PlusCircle, X } from "lucide-react";
 
-// --- Modal 和 Form 元件 (與客戶頁面類似) ---
+// --- Modal 和 Form 元件 (採用標準模式) ---
 function Modal({ title, children, onClose }: { title: string, children: React.ReactNode, onClose: () => void }) {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-start pt-16">
@@ -103,7 +103,6 @@ export default function ProductCategoriesPage() {
   }, []);
 
   useEffect(() => {
-    // 權限檢查
     const role = localStorage.getItem("role");
     if (role !== "admin") {
       toast.error("權限不足");
@@ -127,7 +126,7 @@ export default function ProductCategoriesPage() {
   };
 
   const handleDeleteClick = async (id: number) => {
-    if (!confirm("確定要刪除此產品類別嗎？所有相關聯的資料將一併刪除。")) return;
+    if (!confirm("確定要刪除此產品類別嗎？")) return;
     try {
         await deleteProductCategory(id);
         toast.success("產品類別刪除成功");
