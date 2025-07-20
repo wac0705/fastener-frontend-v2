@@ -54,14 +54,23 @@ export const deleteCustomer = (id: number): Promise<{ success: true }> => fetchW
 // --- 產品定義 (Product Definitions) 相關的 API ---
 
 // 產品主類別
-export interface ProductCategory {
-    id: number;
-    category_code: string;
-    name: string;
-}
+export interface ProductCategory { id: number; category_code: string; name: string; }
 export const getProductCategories = (): Promise<ProductCategory[]> => fetchWithAuth('/api/definitions/product-categories');
 export const createProductCategory = (data: Omit<ProductCategory, 'id'>): Promise<ProductCategory> => fetchWithAuth('/api/definitions/product-categories', { method: 'POST', body: JSON.stringify(data) });
 export const updateProductCategory = (id: number, data: Omit<ProductCategory, 'id'>): Promise<ProductCategory> => fetchWithAuth(`/api/definitions/product-categories/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteProductCategory = (id: number): Promise<{ success: true }> => fetchWithAuth(`/api/definitions/product-categories/${id}`, { method: 'DELETE' });
 
-// (未來將在此處添加 Shapes, Functions, Specifications 的 API)
+// 產品形狀
+export interface ProductShape { id: number; shape_code: string; name: string; }
+export const getProductShapes = (): Promise<ProductShape[]> => fetchWithAuth('/api/definitions/product-shapes');
+export const createProductShape = (data: Omit<ProductShape, 'id'>): Promise<ProductShape> => fetchWithAuth('/api/definitions/product-shapes', { method: 'POST', body: JSON.stringify(data) });
+
+// 產品功能
+export interface ProductFunction { id: number; function_code: string; name: string; }
+export const getProductFunctions = (): Promise<ProductFunction[]> => fetchWithAuth('/api/definitions/product-functions');
+export const createProductFunction = (data: Omit<ProductFunction, 'id'>): Promise<ProductFunction> => fetchWithAuth('/api/definitions/product-functions', { method: 'POST', body: JSON.stringify(data) });
+
+// 產品規格
+export interface ProductSpecification { id: number; spec_code: string; name: string; parent_id: number | null; }
+export const getProductSpecifications = (): Promise<ProductSpecification[]> => fetchWithAuth('/api/definitions/product-specifications');
+export const createProductSpecification = (data: Omit<ProductSpecification, 'id'>): Promise<ProductSpecification> => fetchWithAuth('/api/definitions/product-specifications', { method: 'POST', body: JSON.stringify(data) });
