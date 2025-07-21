@@ -99,7 +99,8 @@ export const getCustomers = async (): Promise<CustomerListItem[]> => {
     throw err;
   }
 };
-export const getCustomerById = async (id: number): Promise<Customer> => {
+// ======== 支援 string | number id！ ==========
+export const getCustomerById = async (id: string | number): Promise<Customer> => {
   try {
     const res = await api.get(`/api/definitions/customers/${id}`);
     return res.data;
@@ -108,6 +109,7 @@ export const getCustomerById = async (id: number): Promise<Customer> => {
     throw err;
   }
 };
+// ============================================
 export const createCustomer = async (
   data: Omit<Customer, "id" | "created_at" | "updated_at" | "transaction_terms">
 ): Promise<Customer> => {
@@ -120,7 +122,7 @@ export const createCustomer = async (
   }
 };
 export const updateCustomer = async (
-  id: number,
+  id: string | number,
   data: Omit<Customer, "id" | "created_at" | "updated_at" | "transaction_terms">
 ): Promise<Customer> => {
   try {
@@ -131,7 +133,7 @@ export const updateCustomer = async (
     throw err;
   }
 };
-export const deleteCustomer = async (id: number): Promise<{ success: true }> => {
+export const deleteCustomer = async (id: string | number): Promise<{ success: true }> => {
   try {
     const res = await api.delete(`/api/definitions/customers/${id}`);
     return res.data;
@@ -143,7 +145,8 @@ export const deleteCustomer = async (id: number): Promise<{ success: true }> => 
 
 /* ===== 客戶交易條件 Customer Transaction Terms ===== */
 
-export const getCustomerTradeTerms = async (customerId: number): Promise<CustomerTransactionTerm[]> => {
+// 這裡也支援 string | number！
+export const getCustomerTradeTerms = async (customerId: string | number): Promise<CustomerTransactionTerm[]> => {
   try {
     const res = await api.get(`/api/definitions/customers/${customerId}/transaction-terms`);
     return res.data;
@@ -152,9 +155,8 @@ export const getCustomerTradeTerms = async (customerId: number): Promise<Custome
     throw err;
   }
 };
-
 export const createCustomerTradeTerm = async (
-  customerId: number,
+  customerId: string | number,
   data: Omit<CustomerTransactionTerm, "id" | "customer_id" | "created_at" | "updated_at" | "is_primary">
 ): Promise<CustomerTransactionTerm> => {
   try {
@@ -165,9 +167,8 @@ export const createCustomerTradeTerm = async (
     throw err;
   }
 };
-
 export const updateCustomerTradeTerm = async (
-  id: number,
+  id: string | number,
   data: Omit<CustomerTransactionTerm, "id" | "customer_id" | "created_at" | "updated_at" | "is_primary">
 ): Promise<CustomerTransactionTerm> => {
   try {
@@ -178,8 +179,7 @@ export const updateCustomerTradeTerm = async (
     throw err;
   }
 };
-
-export const deleteCustomerTradeTerm = async (id: number): Promise<{ success: true }> => {
+export const deleteCustomerTradeTerm = async (id: string | number): Promise<{ success: true }> => {
   try {
     const res = await api.delete(`/api/definitions/transaction-terms/${id}`);
     return res.data;
@@ -188,9 +188,7 @@ export const deleteCustomerTradeTerm = async (id: number): Promise<{ success: tr
     throw err;
   }
 };
-
-// 設定主條件
-export const setPrimaryTradeTerm = async (customerId: number, id: number): Promise<{ success: true }> => {
+export const setPrimaryTradeTerm = async (customerId: string | number, id: string | number): Promise<{ success: true }> => {
   try {
     const res = await api.post(`/api/definitions/customers/${customerId}/transaction-terms/${id}/set-primary`);
     return res.data;
