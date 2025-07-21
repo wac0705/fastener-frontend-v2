@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Customer,
+  CustomerListItem,
   getCustomers,
   createCustomer,
   updateCustomer,
@@ -47,7 +47,7 @@ function CustomerForm({
   onSave,
   onCancel,
 }: {
-  customer: Partial<Customer> | null;
+  customer: Partial<CustomerListItem> | null;
   onSave: () => void;
   onCancel: () => void;
 }) {
@@ -126,8 +126,8 @@ function CustomerRow({
   onEdit,
   onDelete,
 }: {
-  customer: Customer;
-  onEdit: (customer: Customer) => void;
+  customer: CustomerListItem;
+  onEdit: (customer: CustomerListItem) => void;
   onDelete: (id: number) => void;
 }) {
   return (
@@ -153,11 +153,11 @@ function CustomerRow({
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    customer: Partial<Customer> | null;
+    customer: Partial<CustomerListItem> | null;
   }>({ isOpen: false, customer: null });
 
   const loadCustomers = useCallback(async () => {
@@ -175,7 +175,7 @@ export default function CustomersPage() {
     loadCustomers();
   }, [loadCustomers]);
 
-  const handleOpenModal = (customer: Partial<Customer> | null) => {
+  const handleOpenModal = (customer: Partial<CustomerListItem> | null) => {
     setModalState({ isOpen: true, customer });
   };
   const handleCloseModal = () => setModalState({ isOpen: false, customer: null });
