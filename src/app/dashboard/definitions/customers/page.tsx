@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { PlusCircle, X } from "lucide-react";
 
+// ======= Modal 元件 =======
 function Modal({
   title,
   children,
@@ -42,6 +43,7 @@ function Modal({
   );
 }
 
+// ======= Customer 編輯/新增表單 =======
 function CustomerForm({
   customer,
   onSave,
@@ -58,9 +60,10 @@ function CustomerForm({
     customer?.group_customer_name || ""
   );
   const [remarks, setRemarks] = useState(customer?.remarks || "");
-  const isEditing = customer && customer.id;
+  const isEditing = !!customer?.id;
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!groupCustomerCode.trim() || !groupCustomerName.trim()) {
       toast.error("群組客戶代碼與名稱皆不可為空");
       return;
@@ -82,27 +85,31 @@ function CustomerForm({
         toast.success("客戶建立成功");
       }
       onSave();
-    } catch {}
+    } catch (e) {
+      toast.error("儲存失敗，請重試");
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">
-          群組客戶代碼
+          群組客戶代碼 <span className="text-red-500">*</span>
         </label>
         <Input
           value={groupCustomerCode}
           onChange={(e) => setGroupCustomerCode(e.target.value)}
+          required
         />
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">
-          群組客戶名稱
+          群組客戶名稱 <span className="text-red-500">*</span>
         </label>
         <Input
           value={groupCustomerName}
           onChange={(e) => setGroupCustomerName(e.target.value)}
+          required
         />
       </div>
       <div>
@@ -110,17 +117,18 @@ function CustomerForm({
         <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} />
       </div>
       <div className="flex justify-end pt-4 border-t">
-        <Button variant="outline" onClick={onCancel} className="mr-2">
+        <Button variant="outline" onClick={onCancel} type="button" className="mr-2">
           取消
         </Button>
-        <Button onClick={handleSubmit}>
+        <Button type="submit">
           {isEditing ? "儲存變更" : "建立客戶"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
 
+// ======= 客戶表格 row 元件 =======
 function CustomerRow({
   customer,
   onEdit,
@@ -135,7 +143,9 @@ function CustomerRow({
       <td className="p-2">{customer.group_customer_code}</td>
       <td className="p-2">{customer.group_customer_name}</td>
       <td className="p-2">{customer.remarks}</td>
-      <td className="p-2">
+      <td className="p-2">{customer.created_at?.substring(0, 10)}</td>
+      <td className="p-2">{customer.updated_at?.substring(0, 10)}</td>
+      <td className="p-2 whitespace-nowrap">
         <Button variant="outline" size="sm" onClick={() => onEdit(customer)}>
           編輯
         </Button>
@@ -152,6 +162,7 @@ function CustomerRow({
   );
 }
 
+// ======= 主頁面 =======
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,14 +170,16 @@ export default function CustomersPage() {
     isOpen: boolean;
     customer: Partial<CustomerListItem> | null;
   }>({ isOpen: false, customer: null });
+  const [search, setSearch] = useState("");
 
   const loadCustomers = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getCustomers();
       setCustomers(data);
-    } catch {}
-    finally {
+    } catch {
+      toast.error("客戶資料讀取失敗");
+    } finally {
       setIsLoading(false);
     }
   }, []);
@@ -189,8 +202,17 @@ export default function CustomersPage() {
       await deleteCustomer(id);
       toast.success("客戶刪除成功");
       loadCustomers();
-    } catch {}
+    } catch {
+      toast.error("刪除失敗，請重試");
+    }
   };
+
+  // 搜尋邏輯
+  const filtered = customers.filter(
+    (c) =>
+      c.group_customer_code.toLowerCase().includes(search.toLowerCase()) ||
+      c.group_customer_name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <main className="container mx-auto max-w-4xl">
@@ -200,6 +222,25 @@ export default function CustomersPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           新增客戶
         </Button>
+      </div>
+
+      <div className="flex mb-4">
+        <Input
+          className="w-64"
+          placeholder="搜尋客戶編碼/名稱..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-1"
+            onClick={() => setSearch("")}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <div className="border rounded-lg p-2 bg-card overflow-x-auto">
@@ -212,18 +253,28 @@ export default function CustomersPage() {
                 <th className="p-2 text-left">群組客戶代碼</th>
                 <th className="p-2 text-left">群組客戶名稱</th>
                 <th className="p-2 text-left">備註</th>
+                <th className="p-2 text-left">建立時間</th>
+                <th className="p-2 text-left">最後修改</th>
                 <th className="p-2 text-left">操作</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => (
-                <CustomerRow
-                  key={customer.id}
-                  customer={customer}
-                  onEdit={handleOpenModal}
-                  onDelete={handleDelete}
-                />
-              ))}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-muted-foreground">
+                    無資料
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((customer) => (
+                  <CustomerRow
+                    key={customer.id}
+                    customer={customer}
+                    onEdit={handleOpenModal}
+                    onDelete={handleDelete}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         )}
