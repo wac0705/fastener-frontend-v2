@@ -1,8 +1,7 @@
-// src/lib/api.ts
 import api from "@/utils/axios";
 import { toast } from "sonner";
 
-// 型別工具
+// 工具：統一處理 API error
 function getApiError(err: unknown): string {
   if (typeof err === "object" && err && "response" in err) {
     const response = (err as { response?: { data?: { error?: string } } }).response;
@@ -12,11 +11,13 @@ function getApiError(err: unknown): string {
   return "API 錯誤";
 }
 
-// --- 公司 (Companies) 相關的 API ---
+// --- 公司 Company 相關 API ---
 export interface Company {
   id: number;
   name: string;
   parent_id: number | null;
+  currency: string;
+  language: string;
   created_at: string;
   updated_at: string;
   children?: Company[];
@@ -32,7 +33,7 @@ export const getCompanies = async (): Promise<Company[]> => {
   }
 };
 
-export const createCompany = async (data: { name: string; parent_id: number | null }): Promise<Company> => {
+export const createCompany = async (data: { name: string; parent_id: number | null; currency: string; language: string }): Promise<Company> => {
   try {
     const res = await api.post("/api/definitions/companies", data);
     return res.data;
@@ -42,7 +43,10 @@ export const createCompany = async (data: { name: string; parent_id: number | nu
   }
 };
 
-export const updateCompany = async (id: number, data: { name: string; parent_id: number | null }): Promise<{ message: string }> => {
+export const updateCompany = async (
+  id: number,
+  data: { name: string; parent_id: number | null; currency: string; language: string }
+): Promise<{ message: string }> => {
   try {
     const res = await api.put(`/api/definitions/companies/${id}`, data);
     return res.data;
@@ -62,7 +66,7 @@ export const deleteCompany = async (id: number): Promise<{ message: string }> =>
   }
 };
 
-// --- 客戶 (Customers) 相關的 API ---
+// --- 客戶 Customer 相關 API ---
 export interface CustomerTransactionTerm { id: number; customer_id: number; company_id: number; incoterm: string; currency_code: string; }
 export interface Customer { id: number; group_customer_code: string; group_customer_name: string; remarks: string; created_at: string; updated_at: string; transaction_terms: CustomerTransactionTerm[]; }
 export type CustomerListItem = Omit<Customer, 'transaction_terms'>;
@@ -117,7 +121,7 @@ export const deleteCustomer = async (id: number): Promise<{ success: true }> => 
   }
 };
 
-// --- 產品定義 (Product Definitions) 相關的 API ---
+// --- 產品定義 Product Definitions 相關 API ---
 export interface ProductCategory { id: number; category_code: string; name: string; }
 export const getProductCategories = async (): Promise<ProductCategory[]> => {
   try {
