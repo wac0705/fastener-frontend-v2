@@ -1,5 +1,5 @@
 // utils/axios.js
-import axios from "axios";
+import api from "@/utils/axios";
 
 // 建立 axios 實例（共用設定）
 const instance = axios.create({
