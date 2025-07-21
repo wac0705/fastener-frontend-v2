@@ -6,21 +6,32 @@ import { getCustomerById } from "@/lib/api";
 import CustomerTradeTerms from "@/components/CustomerTradeTerms";
 import { Customer } from "@/lib/api";
 
-// ❗【不要用 function CustomerDetailPage({ params })】❗
-// 請直接寫成這樣，不要寫參數
-
 export default function CustomerDetailPage() {
-  const params = useParams() as { id: string };
-  const customerId = Number(params.id);
+  // 從路由 params 取得 id
+  const params = useParams();
+  // 你的 [id] 路由會自動把 G00001 塞到 params.id
+  const customerId = params?.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // debug 用，確認 customerId 真的有抓到
+  useEffect(() => {
+    console.log("客戶 id param:", customerId);
+  }, [customerId]);
 
   useEffect(() => {
     if (!customerId) return;
     setLoading(true);
     getCustomerById(customerId)
-      .then(setCustomer)
+      .then((data) => {
+        setCustomer(data);
+        console.log("客戶資料：", data);
+      })
+      .catch((err) => {
+        setCustomer(null);
+        console.error("取得客戶失敗", err);
+      })
       .finally(() => setLoading(false));
   }, [customerId]);
 
@@ -49,6 +60,7 @@ export default function CustomerDetailPage() {
               更新：{customer.updated_at?.substring(0, 10)}
             </div>
           </div>
+          {/* 交易條件元件 */}
           <CustomerTradeTerms customerId={customerId} />
         </>
       ) : (
