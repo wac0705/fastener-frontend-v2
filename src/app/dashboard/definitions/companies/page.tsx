@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { PlusCircle, CornerDownRight, X } from "lucide-react";
 
+// --- Utility function to flatten the tree for the select dropdown ---
 function flattenCompanies(companies: Company[]): { id: number; name: string; level: number }[] {
     const result: { id: number; name: string; level: number }[] = [];
     function recurse(nodes: Company[], level: number) {
@@ -28,6 +29,7 @@ function flattenCompanies(companies: Company[]): { id: number; name: string; lev
     return result;
 }
 
+// --- Modal & Form Components ---
 function Modal({ title, children, onClose }: { title: string, children: React.ReactNode, onClose: () => void }) {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-start pt-16">
@@ -45,6 +47,9 @@ function Modal({ title, children, onClose }: { title: string, children: React.Re
 function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Partial<Company> | null, allCompanies: Company[], onSave: () => void, onCancel: () => void }) {
     const [name, setName] = useState(company?.name || '');
     const [parentId, setParentId] = useState<number | null>(company?.parent_id === undefined ? null : company.parent_id);
+    // 新增 currency/language 欄位，預設值為 "USD"/"en"
+    const [currency, setCurrency] = useState(company?.currency || "USD");
+    const [language, setLanguage] = useState(company?.language || "en");
     const isEditing = company && company.id;
 
     const companyOptions = useMemo(() => flattenCompanies(allCompanies), [allCompanies]);
@@ -56,10 +61,20 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
         }
         try {
             if (isEditing) {
-                await updateCompany(company.id!, { name, parent_id: parentId });
+                await updateCompany(company.id!, {
+                    name,
+                    parent_id: parentId,
+                    currency: currency || "USD",
+                    language: language || "en"
+                });
                 toast.success("公司更新成功");
             } else {
-                await createCompany({ name, parent_id: parentId });
+                await createCompany({
+                    name,
+                    parent_id: parentId,
+                    currency: currency || "USD",
+                    language: language || "en"
+                });
                 toast.success("公司建立成功");
             }
             onSave();
@@ -84,12 +99,20 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
                         <option
                             key={opt.id}
                             value={opt.id}
-                            disabled={!!(isEditing && opt.id === company.id)}
+                            disabled={!!(isEditing && opt.id === company?.id)}
                         >
                             {'\u00A0'.repeat(opt.level * 4)}{opt.name}
                         </option>
                     ))}
                 </select>
+            </div>
+            <div>
+                <label className="block text-sm font-medium mb-1">貨幣 (currency)</label>
+                <Input value={currency} onChange={e => setCurrency(e.target.value)} placeholder="USD" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium mb-1">語言 (language)</label>
+                <Input value={language} onChange={e => setLanguage(e.target.value)} placeholder="en" />
             </div>
             <div className="flex justify-end pt-4 border-t">
                 <Button variant="outline" onClick={onCancel} className="mr-2">取消</Button>
@@ -99,6 +122,7 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
     );
 }
 
+// --- Recursive Node Component ---
 function CompanyNode({ company, level, onEdit, onDelete }: { company: Company, level: number, onEdit: (company: Company) => void, onDelete: (id: number) => void }) {
     return (
         <div>
@@ -126,6 +150,7 @@ function CompanyNode({ company, level, onEdit, onDelete }: { company: Company, l
     );
 }
 
+// --- Main Page Component ---
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
