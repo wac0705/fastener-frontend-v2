@@ -7,17 +7,16 @@ import CustomerTradeTerms from "@/components/CustomerTradeTerms";
 import { Customer } from "@/lib/api";
 
 export default function CustomerDetailPage() {
-  // 從路由 params 取得 id
+  // 取得路由參數 id
   const params = useParams();
-  // 你的 [id] 路由會自動把 G00001 塞到 params.id
-  const customerId = params?.id as string;
+  const customerId = params?.id as string; // 這裡直接取 string（像 G00001）
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // debug 用，確認 customerId 真的有抓到
+  // debug 看一下抓到的 id
   useEffect(() => {
-    console.log("客戶 id param:", customerId);
+    console.log("客戶 id param =", customerId);
   }, [customerId]);
 
   useEffect(() => {
@@ -60,7 +59,7 @@ export default function CustomerDetailPage() {
               更新：{customer.updated_at?.substring(0, 10)}
             </div>
           </div>
-          {/* 交易條件元件 */}
+          {/* 交易條件 */}
           <CustomerTradeTerms customerId={customerId} />
         </>
       ) : (
