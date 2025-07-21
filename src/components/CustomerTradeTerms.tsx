@@ -1,30 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCustomerTradeTerms } from "@/lib/api";
+import { getCustomerTradeTerms, CustomerTransactionTerm } from "@/lib/api";
 
-// 資料型別宣告
-export interface CustomerTransactionTerm {
-  id: number;
-  customer_id: number;
-  company_id: number;
-  incoterm: string;
-  currency_code: string;
-  commission_rate: number | null;
-  export_port: string;
-  destination_country: string;
-  is_primary: boolean;
-  remarks: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// 正確 props 型別宣告
+// **這裡型別直接用 string | number**
 interface Props {
-  customerId: number;
+  customerId: string | number;
 }
 
-// 主元件
 export default function CustomerTradeTerms({ customerId }: Props) {
   const [terms, setTerms] = useState<CustomerTransactionTerm[]>([]);
   const [loading, setLoading] = useState(true);
