@@ -44,10 +44,22 @@ function Modal({ title, children, onClose }: { title: string, children: React.Re
     );
 }
 
-function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Partial<Company> | null, allCompanies: Company[], onSave: () => void, onCancel: () => void }) {
-    const [name, setName] = useState(company?.name || '');
-    const [parentId, setParentId] = useState<number | null>(company?.parent_id === undefined ? null : company.parent_id);
-    // 新增 currency/language 欄位，預設值為 "USD"/"en"
+function CompanyForm({
+    company,
+    allCompanies,
+    onSave,
+    onCancel,
+}: {
+    company: Partial<Company> | null;
+    allCompanies: Company[];
+    onSave: () => void;
+    onCancel: () => void;
+}) {
+    const [name, setName] = useState(company?.name || "");
+    // 關鍵：parentId 只能是 number 或 null
+    const [parentId, setParentId] = useState<number | null>(
+        typeof company?.parent_id === "number" ? company.parent_id : null
+    );
     const [currency, setCurrency] = useState(company?.currency || "USD");
     const [language, setLanguage] = useState(company?.language || "en");
     const isEditing = company && company.id;
@@ -59,22 +71,19 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
             toast.error("公司名稱不能為空");
             return;
         }
+        // 關鍵：保證 parent_id 只有 number 或 null
+        const payload = {
+            name,
+            parent_id: parentId === null ? null : Number(parentId),
+            currency: currency || "USD",
+            language: language || "en",
+        };
         try {
             if (isEditing) {
-                await updateCompany(company.id!, {
-                    name,
-                    parent_id: parentId,
-                    currency: currency || "USD",
-                    language: language || "en"
-                });
+                await updateCompany(company.id!, payload);
                 toast.success("公司更新成功");
             } else {
-                await createCompany({
-                    name,
-                    parent_id: parentId,
-                    currency: currency || "USD",
-                    language: language || "en"
-                });
+                await createCompany(payload);
                 toast.success("公司建立成功");
             }
             onSave();
@@ -91,7 +100,7 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
                 <label className="block text-sm font-medium mb-1">上層公司 (可選)</label>
                 <select
                     value={parentId === null ? "" : String(parentId)}
-                    onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+                    onChange={(e) => setParentId(e.target.value === "" ? null : Number(e.target.value))}
                     className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                     <option value="">-- 無 (設為根層級) --</option>
@@ -101,7 +110,8 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
                             value={opt.id}
                             disabled={!!(isEditing && opt.id === company?.id)}
                         >
-                            {'\u00A0'.repeat(opt.level * 4)}{opt.name}
+                            {"\u00A0".repeat(opt.level * 4)}
+                            {opt.name}
                         </option>
                     ))}
                 </select>
@@ -115,15 +125,29 @@ function CompanyForm({ company, allCompanies, onSave, onCancel }: { company: Par
                 <Input value={language} onChange={e => setLanguage(e.target.value)} placeholder="en" />
             </div>
             <div className="flex justify-end pt-4 border-t">
-                <Button variant="outline" onClick={onCancel} className="mr-2">取消</Button>
-                <Button onClick={handleSubmit}>{isEditing ? "儲存變更" : "建立公司"}</Button>
+                <Button variant="outline" onClick={onCancel} className="mr-2">
+                    取消
+                </Button>
+                <Button onClick={handleSubmit}>
+                    {isEditing ? "儲存變更" : "建立公司"}
+                </Button>
             </div>
         </div>
     );
 }
 
 // --- Recursive Node Component ---
-function CompanyNode({ company, level, onEdit, onDelete }: { company: Company, level: number, onEdit: (company: Company) => void, onDelete: (id: number) => void }) {
+function CompanyNode({
+    company,
+    level,
+    onEdit,
+    onDelete,
+}: {
+    company: Company;
+    level: number;
+    onEdit: (company: Company) => void;
+    onDelete: (id: number) => void;
+}) {
     return (
         <div>
             <div
@@ -135,14 +159,29 @@ function CompanyNode({ company, level, onEdit, onDelete }: { company: Company, l
                     <span className="font-medium">{company.name}</span>
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="outline" size="sm" onClick={() => onEdit(company)}>編輯</Button>
-                    <Button variant="destructive" size="sm" onClick={() => onDelete(company.id)} disabled={company.id === 1}>刪除</Button>
+                    <Button variant="outline" size="sm" onClick={() => onEdit(company)}>
+                        編輯
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onDelete(company.id)}
+                        disabled={company.id === 1}
+                    >
+                        刪除
+                    </Button>
                 </div>
             </div>
             {company.children && company.children.length > 0 && (
                 <div>
                     {company.children.map(child => (
-                        <CompanyNode key={child.id} company={child} level={level + 1} onEdit={onEdit} onDelete={onDelete} />
+                        <CompanyNode
+                            key={child.id}
+                            company={child}
+                            level={level + 1}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                        />
                     ))}
                 </div>
             )}
@@ -211,7 +250,13 @@ export default function CompaniesPage() {
                     <p className="p-4 text-muted-foreground">載入中...</p>
                 ) : (
                     companies.map(company => (
-                        <CompanyNode key={company.id} company={company} level={0} onEdit={handleOpenModal} onDelete={handleDelete} />
+                        <CompanyNode
+                            key={company.id}
+                            company={company}
+                            level={0}
+                            onEdit={handleOpenModal}
+                            onDelete={handleDelete}
+                        />
                     ))
                 )}
             </div>
