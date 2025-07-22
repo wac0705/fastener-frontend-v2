@@ -99,6 +99,7 @@ export const getCustomers = async (): Promise<CustomerListItem[]> => {
     throw err;
   }
 };
+
 // ======== 支援 string | number id！ ==========
 export const getCustomerById = async (id: string | number): Promise<Customer> => {
   try {
@@ -109,7 +110,18 @@ export const getCustomerById = async (id: string | number): Promise<Customer> =>
     throw err;
   }
 };
-// ============================================
+
+// 🟢 新增查 code 的 API
+export const getCustomerByCode = async (code: string): Promise<Customer> => {
+  try {
+    const res = await api.get(`/api/definitions/customers/code/${code}`);
+    return res.data;
+  } catch (err: unknown) {
+    toast.error(getApiError(err) || "取得客戶資料失敗");
+    throw err;
+  }
+};
+
 export const createCustomer = async (
   data: Omit<Customer, "id" | "created_at" | "updated_at" | "transaction_terms">
 ): Promise<Customer> => {
