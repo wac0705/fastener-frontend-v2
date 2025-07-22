@@ -2,27 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getCustomerById } from "@/lib/api";
+import { getCustomerById, getCustomerByCode, Customer } from "@/lib/api";
 import CustomerTradeTerms from "@/components/CustomerTradeTerms";
-import { Customer } from "@/lib/api";
 
 export default function CustomerDetailPage() {
-  // 取得路由參數 id
   const params = useParams();
-  const customerId = params?.id as string; // 這裡直接取 string（像 G00001）
+  const idOrCode = params?.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // debug 看一下抓到的 id
   useEffect(() => {
-    console.log("客戶 id param =", customerId);
-  }, [customerId]);
-
-  useEffect(() => {
-    if (!customerId) return;
+    if (!idOrCode) return;
     setLoading(true);
-    getCustomerById(customerId)
+
+    // 判斷是否為純數字 id
+    const fetch = /^\d+$/.test(idOrCode)
+      ? getCustomerById(Number(idOrCode))
+      : getCustomerByCode(idOrCode);
+
+    fetch
       .then((data) => {
         setCustomer(data);
         console.log("客戶資料：", data);
@@ -32,7 +31,7 @@ export default function CustomerDetailPage() {
         console.error("取得客戶失敗", err);
       })
       .finally(() => setLoading(false));
-  }, [customerId]);
+  }, [idOrCode]);
 
   return (
     <div className="max-w-4xl mx-auto py-8">
@@ -60,7 +59,7 @@ export default function CustomerDetailPage() {
             </div>
           </div>
           {/* 交易條件 */}
-          <CustomerTradeTerms customerId={customerId} />
+          <CustomerTradeTerms customerId={customer.id} />
         </>
       ) : (
         <div className="p-4 text-red-500">查無此客戶資料</div>
