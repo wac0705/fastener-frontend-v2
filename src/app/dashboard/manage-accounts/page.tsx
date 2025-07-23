@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 interface Account {
   id: number;
@@ -26,7 +27,6 @@ export default function ManageAccountsPage() {
 
   const router = useRouter();
 
-  // --- 新增：登出處理函式 ---
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -35,30 +35,23 @@ export default function ManageAccountsPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-
-    if (!token || role !== "admin") {
+    if (role !== "admin") {
       toast.error("未授權訪問，請重新登入");
       router.push("/login");
     } else {
       fetchAccounts();
       setLoading(false);
     }
+    // eslint-disable-next-line
   }, [router]);
 
   const fetchAccounts = async () => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const res = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts`
       );
-      if (!res.ok) {
-        throw new Error("取得帳號資料失敗");
-      }
+      if (!res.ok) throw new Error("取得帳號資料失敗");
       const data = await res.json();
       data.sort((a: Account, b: Account) => {
         if (a.role === 'admin') return -1;
@@ -77,16 +70,11 @@ export default function ManageAccountsPage() {
       toast.error("帳號和密碼為必填欄位");
       return;
     }
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
           body: JSON.stringify({
             username: newUsername,
             password: newPassword,
@@ -94,7 +82,6 @@ export default function ManageAccountsPage() {
           }),
         }
       );
-
       if (res.ok) {
         toast.success("新增成功");
         setNewUsername("");
@@ -111,18 +98,13 @@ export default function ManageAccountsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts/${id}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
-
       if (res.ok) {
         toast.success("刪除成功");
         await fetchAccounts();
@@ -136,23 +118,17 @@ export default function ManageAccountsPage() {
   };
 
   const handleUpdate = async (id: number) => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts/${id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
           body: JSON.stringify({
             role: editingRole,
             is_active: editingIsActive,
           }),
         }
       );
-
       if (res.ok) {
         toast.success("更新成功");
         setEditingId(null);
@@ -186,7 +162,6 @@ export default function ManageAccountsPage() {
 
   return (
     <main className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
-      {/* --- 修改此處，加入標題和登出按鈕 --- */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">帳號管理</h1>
         <Button variant="outline" onClick={handleLogout}>
@@ -228,7 +203,6 @@ export default function ManageAccountsPage() {
             className="flex items-center justify-between border p-3 rounded-lg bg-card/50"
           >
             {editingId === account.id ? (
-              // 編輯模式
               <>
                 <div className="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-2 items-center pr-4">
                   <span className="font-semibold font-mono">{account.username}</span>
@@ -257,7 +231,6 @@ export default function ManageAccountsPage() {
                 </div>
               </>
             ) : (
-              // 一般顯示模式
               <>
                 <div className="font-mono text-sm flex items-center gap-4">
                   <span className={`font-semibold ${!account.is_active && 'text-muted-foreground line-through'}`}>
