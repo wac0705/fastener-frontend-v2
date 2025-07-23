@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-const IDLE_TIMEOUT = 30 * 60 * 1000; // 30分鐘 (可自行調整)
+const IDLE_TIMEOUT = 10 * 1000; // 30分鐘 (可自行調整)
 
 export default function useIdleLogout() {
   const router = useRouter();
