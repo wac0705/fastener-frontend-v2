@@ -7,45 +7,106 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
+// 帳號
 interface Account {
   id: number;
   username: string;
   role: string;
+  company_id: number;
+  company_name?: string; // 若後端有回
   is_active: boolean;
+}
+
+// 公司
+interface Company {
+  id: number;
+  name: string;
+  parent_id: number | null;
 }
 
 export default function ManageAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+
+  // 新增帳號用
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("sales");
+  const [newCompanyId, setNewCompanyId] = useState<number | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingRole, setEditingRole] = useState("");
   const [editingIsActive, setEditingIsActive] = useState(true);
 
+  const [role, setRole] = useState(""); // 當前登入者角色
+  const [myCompanyId, setMyCompanyId] = useState<number | null>(null);
+
   const router = useRouter();
 
+  // 工具：取所有下層公司id
+  function getDescendantCompanyIds(companies: Company[], rootId: number): number[] {
+    const result: number[] = [];
+    function traverse(id: number) {
+      result.push(id);
+      companies.filter(c => c.parent_id === id).forEach(child => traverse(child.id));
+    }
+    traverse(rootId);
+    return result;
+  }
+
+  // 登出
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("company_id");
     toast.success("您已成功登出");
     router.push("/login");
   };
 
   useEffect(() => {
-    const role = localStorage.getItem("role");
-    if (role !== "admin") {
-      toast.error("未授權訪問，請重新登入");
-      router.push("/login");
-    } else {
-      fetchAccounts();
-      setLoading(false);
-    }
+    const fetchData = async () => {
+      const role = localStorage.getItem("role") || "";
+      const companyId = Number(localStorage.getItem("company_id") || "0");
+      setRole(role);
+      setMyCompanyId(companyId);
+
+      // 取得公司清單
+      try {
+        const res = await fetchWithAuth(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/definitions/companies`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setCompanies(data);
+          setNewCompanyId(companyId); // 新增預設自己公司
+        }
+      } catch {
+        toast.error("取得公司清單失敗");
+      }
+
+      // 權限檢查
+      if (role !== "admin" && (!companyId || companyId === 0)) {
+        toast.error("未授權訪問，請重新登入");
+        router.push("/login");
+      } else {
+        await fetchAccounts();
+        setLoading(false);
+      }
+    };
+    fetchData();
     // eslint-disable-next-line
   }, [router]);
 
+  // 取得可選公司清單（admin = 全部，其他 = 自己+子公司）
+  const selectableCompanyIds = role === "admin"
+    ? companies.map(c => c.id)
+    : myCompanyId
+      ? getDescendantCompanyIds(companies, myCompanyId)
+      : [];
+  const selectableCompanies = companies.filter(c => selectableCompanyIds.includes(c.id));
+
+  // 取得帳號清單
   const fetchAccounts = async () => {
     try {
       const res = await fetchWithAuth(
@@ -65,9 +126,10 @@ export default function ManageAccountsPage() {
     }
   };
 
+  // 新增帳號
   const handleAdd = async () => {
-    if (!newUsername || !newPassword) {
-      toast.error("帳號和密碼為必填欄位");
+    if (!newUsername || !newPassword || !newCompanyId) {
+      toast.error("帳號、密碼、公司為必填欄位");
       return;
     }
     try {
@@ -79,6 +141,7 @@ export default function ManageAccountsPage() {
             username: newUsername,
             password: newPassword,
             role: newRole,
+            company_id: newCompanyId,
           }),
         }
       );
@@ -87,6 +150,7 @@ export default function ManageAccountsPage() {
         setNewUsername("");
         setNewPassword("");
         setNewRole("sales");
+        setNewCompanyId(myCompanyId); // 預設回自己公司
         await fetchAccounts();
       } else {
         const errorData = await res.json();
@@ -97,13 +161,12 @@ export default function ManageAccountsPage() {
     }
   };
 
+  // 刪除帳號
   const handleDelete = async (id: number) => {
     try {
       const res = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts/${id}`,
-        {
-          method: "DELETE",
-        }
+        { method: "DELETE" }
       );
       if (res.ok) {
         toast.success("刪除成功");
@@ -117,6 +180,7 @@ export default function ManageAccountsPage() {
     }
   };
 
+  // 編輯帳號
   const handleUpdate = async (id: number) => {
     try {
       const res = await fetchWithAuth(
@@ -171,7 +235,7 @@ export default function ManageAccountsPage() {
 
       <div className="mb-8 p-6 border rounded-lg bg-card">
         <h2 className="text-lg font-semibold mb-4">新增帳號</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Input
             placeholder="新帳號"
             value={newUsername}
@@ -191,6 +255,18 @@ export default function ManageAccountsPage() {
             <option value="sales">sales</option>
             <option value="engineer">engineer</option>
             <option value="admin">admin</option>
+          </select>
+          {/* 公司下拉選單（根據分權） */}
+          <select
+            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+            value={newCompanyId ?? ""}
+            onChange={e => setNewCompanyId(Number(e.target.value))}
+            disabled={role !== "admin" && selectableCompanies.length === 1}
+          >
+            <option value="">選擇公司</option>
+            {selectableCompanies.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
           <Button onClick={handleAdd}>新增帳號</Button>
         </div>
@@ -237,6 +313,7 @@ export default function ManageAccountsPage() {
                     {account.username}
                   </span>
                   <span className="text-muted-foreground">({account.role})</span>
+                  {account.company_name && <span className="ml-2 text-xs">{account.company_name}</span>}
                   {!account.is_active && <span className="text-xs text-destructive font-bold">[已停用]</span>}
                 </div>
                 <div className="flex gap-2">
