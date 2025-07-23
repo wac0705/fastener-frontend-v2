@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 interface Account {
@@ -15,14 +16,17 @@ interface Account {
   company_name?: string;
   is_active: boolean;
 }
+
 interface Company {
   id: number;
   name: string;
   parent_id: number | null;
 }
+
 interface CompanyWithChildren extends Company {
   children?: CompanyWithChildren[];
 }
+
 function flattenCompanies(tree: CompanyWithChildren[]): Company[] {
   const result: Company[] = [];
   function traverse(node: CompanyWithChildren) {
@@ -52,6 +56,11 @@ export default function ManageAccountsPage() {
   const [editingIsActive, setEditingIsActive] = useState(true);
   const [role, setRole] = useState("");
   const [myCompanyId, setMyCompanyId] = useState<number | null>(null);
+
+  // 新增: 密碼重設相關 state
+  const [resetId, setResetId] = useState<number | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [isResetLoading, setIsResetLoading] = useState(false);
 
   const router = useRouter();
 
@@ -130,7 +139,6 @@ export default function ManageAccountsPage() {
       );
       if (!res.ok) throw new Error("取得帳號資料失敗");
       const data = await res.json();
-      // 這邊排序可改成 superadmin/company_admin 優先
       data.sort((a: Account, b: Account) => {
         if (a.role === 'superadmin' || a.role === 'company_admin') return -1;
         if (b.role === 'superadmin' || b.role === 'company_admin') return 1;
@@ -220,6 +228,35 @@ export default function ManageAccountsPage() {
     }
   };
 
+  // 新增：密碼重設
+  const handleResetPassword = async () => {
+    if (!resetId || !resetPassword) {
+      toast.error("請輸入新密碼");
+      return;
+    }
+    setIsResetLoading(true);
+    try {
+      const res = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/manage-accounts/${resetId}/reset-password`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ password: resetPassword }),
+        }
+      );
+      if (res.ok) {
+        toast.success("密碼已更新");
+        setResetId(null);
+        setResetPassword("");
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "修改密碼失敗");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "發生未知錯誤");
+    }
+    setIsResetLoading(false);
+  };
+
   const startEditing = (account: Account) => {
     setEditingId(account.id);
     setEditingRole(account.role);
@@ -271,7 +308,6 @@ export default function ManageAccountsPage() {
             <option value="company_admin">company_admin</option>
             <option value="superadmin">superadmin</option>
           </select>
-          {/* 公司下拉選單（根據分權） */}
           <select
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm"
             value={newCompanyId ?? ""}
@@ -349,12 +385,46 @@ export default function ManageAccountsPage() {
                   >
                     刪除
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setResetId(account.id)}
+                  >
+                    修改密碼
+                  </Button>
                 </div>
               </>
             )}
           </div>
         ))}
       </div>
+
+      {/* 新增：密碼重設 Dialog */}
+      <Dialog open={!!resetId} onOpenChange={open => {
+        if (!open) {
+          setResetId(null);
+          setResetPassword("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>修改密碼</DialogTitle>
+          </DialogHeader>
+          <Input
+            type="password"
+            placeholder="請輸入新密碼"
+            value={resetPassword}
+            onChange={e => setResetPassword(e.target.value)}
+          />
+          <Button
+            className="mt-4 w-full"
+            onClick={handleResetPassword}
+            disabled={isResetLoading}
+          >
+            {isResetLoading ? "儲存中..." : "儲存新密碼"}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
