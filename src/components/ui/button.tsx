@@ -2,8 +2,8 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
-// 👇 這裡直接宣告，不要 import { cn } ...
-function cn(...inputs: any[]): string {
+// 👇 型別安全版，不會再被 eslint/type error 報錯
+function cn(...inputs: (string | false | null | undefined)[]): string {
   return inputs.filter(Boolean).join(" ");
 }
 
