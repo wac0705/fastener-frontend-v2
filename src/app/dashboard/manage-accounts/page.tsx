@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
-// 帳號
 interface Account {
   id: number;
   username: string;
@@ -17,19 +16,16 @@ interface Account {
   is_active: boolean;
 }
 
-// 公司
 interface Company {
   id: number;
   name: string;
   parent_id: number | null;
 }
 
-// 遞迴型別：支援 children
 interface CompanyWithChildren extends Company {
   children?: CompanyWithChildren[];
 }
 
-// 展平樹狀公司資料
 function flattenCompanies(tree: CompanyWithChildren[]): Company[] {
   const result: Company[] = [];
   function traverse(node: CompanyWithChildren) {
@@ -50,21 +46,32 @@ export default function ManageAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-
-  // 新增帳號用
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState("sales");
   const [newCompanyId, setNewCompanyId] = useState<number | null>(null);
-
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingRole, setEditingRole] = useState("");
   const [editingIsActive, setEditingIsActive] = useState(true);
-
-  const [role, setRole] = useState(""); // 當前登入者角色
+  const [role, setRole] = useState("");
   const [myCompanyId, setMyCompanyId] = useState<number | null>(null);
 
   const router = useRouter();
+
+  // 權限檢查（只有 admin 可以進入）
+  useEffect(() => {
+    const localRole = localStorage.getItem("role") || "";
+    if (localRole !== "admin") {
+      toast.error("你沒有權限進入帳號管理頁面");
+      router.replace("/"); // 或 "/login"
+      return;
+    }
+    setRole(localRole);
+    setMyCompanyId(Number(localStorage.getItem("company_id") || "0"));
+    setLoading(true);
+    fetchData();
+    // eslint-disable-next-line
+  }, [router]);
 
   // 工具：取所有下層公司id
   function getDescendantCompanyIds(companies: Company[], rootId: number): number[] {
@@ -77,7 +84,6 @@ export default function ManageAccountsPage() {
     return result;
   }
 
-  // 登出
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -86,42 +92,31 @@ export default function ManageAccountsPage() {
     router.push("/login");
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const role = localStorage.getItem("role") || "";
+  // 取得公司與帳號資料
+  const fetchData = async () => {
+    try {
       const companyId = Number(localStorage.getItem("company_id") || "0");
-      setRole(role);
-      setMyCompanyId(companyId);
-
-      // 取得公司清單
-      try {
-        const res = await fetchWithAuth(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/definitions/companies`
-        );
-        if (res.ok) {
-          const data: CompanyWithChildren[] = await res.json();
-          const flat = flattenCompanies(data);
-          setCompanies(flat);
-          setNewCompanyId(companyId);
-        }
-      } catch {
+      // 公司
+      const resCompany = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/definitions/companies`
+      );
+      if (resCompany.ok) {
+        const data: CompanyWithChildren[] = await resCompany.json();
+        const flat = flattenCompanies(data);
+        setCompanies(flat);
+        setNewCompanyId(companyId);
+      } else {
         toast.error("取得公司清單失敗");
       }
+      // 帳號
+      await fetchAccounts();
+    } catch {
+      toast.error("取得公司清單失敗");
+    }
+    setLoading(false);
+  };
 
-      // 權限檢查
-      if (role !== "admin" && (!companyId || companyId === 0)) {
-        toast.error("未授權訪問，請重新登入");
-        router.push("/login");
-      } else {
-        await fetchAccounts();
-        setLoading(false);
-      }
-    };
-    fetchData();
-    // eslint-disable-next-line
-  }, [router]);
-
-  // 取得可選公司清單（admin = 全部，其他 = 自己+子公司）
+  // 可選公司清單
   const selectableCompanyIds = role === "admin"
     ? companies.map(c => c.id)
     : myCompanyId
@@ -149,7 +144,6 @@ export default function ManageAccountsPage() {
     }
   };
 
-  // 新增帳號
   const handleAdd = async () => {
     if (!newUsername || !newPassword || !newCompanyId) {
       toast.error("帳號、密碼、公司為必填欄位");
@@ -184,7 +178,6 @@ export default function ManageAccountsPage() {
     }
   };
 
-  // 刪除帳號
   const handleDelete = async (id: number) => {
     try {
       const res = await fetchWithAuth(
@@ -203,7 +196,6 @@ export default function ManageAccountsPage() {
     }
   };
 
-  // 編輯帳號
   const handleUpdate = async (id: number) => {
     try {
       const res = await fetchWithAuth(
