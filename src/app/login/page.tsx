@@ -1,4 +1,3 @@
-// fastener-frontend-v2-main/src/app/login/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -17,14 +16,9 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // 保留您增加的 URL 修正與日誌，這非常棒
     const baseUrl = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/$/, "");
     const apiUrl = `${baseUrl}/api/login`;
     const requestBody = { username, password };
-
-    console.log("🚀 準備發送登入請求...");
-    console.log("請求 URL:", apiUrl);
-    console.log("請求內容 (Body):", JSON.stringify(requestBody));
 
     try {
       const res = await fetch(apiUrl, {
@@ -33,31 +27,27 @@ export default function LoginPage() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log(`✅ 後端回應狀態碼: ${res.status}`);
-      
       const data = await res.json();
 
       if (res.ok) {
-        console.log("✅ 登入成功，取得的回應:", data);
+        // ✅ 關鍵！同步存下 company_id、role
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
+        localStorage.setItem("company_id", String(data.company_id));
         toast.success("登入成功！");
 
-        if (data.role === "admin") {
-          // 【核心修正點】將跳轉路徑更新到新的 dashboard 路徑
+        // 根據角色權限分流導頁
+        if (data.role === "superadmin" || data.role === "company_admin") {
           router.push("/dashboard/manage-accounts");
         } else {
-          // 其他角色暫時導向首頁，未來可以導向他們的儀表板
           router.push("/");
         }
       } else {
-        console.error("❌ 登入失敗，後端回應:", data);
         const errorMessage = data.error || `登入失敗 (${res.status})`;
         setError(errorMessage);
         toast.error(errorMessage);
       }
     } catch (err) {
-      console.error("❌ 捕獲到網路請求錯誤:", err);
       const errorMessage = "無法連接到伺服器或解析回應失敗。";
       setError(errorMessage);
       toast.error(errorMessage);
