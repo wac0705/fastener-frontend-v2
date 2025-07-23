@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import useIdleLogout from "@/hooks/useIdleLogout"; // ← 加入這一行
+import IdleLogoutProvider from "@/components/IdleLogoutProvider"; // ← 只 import Provider，不直接用 hook
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,14 +23,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useIdleLogout(); // ← 全域啟用閒置自動登出
-
   return (
     <html lang="zh-Hant">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <IdleLogoutProvider>
+          {children}
+        </IdleLogoutProvider>
       </body>
     </html>
   );
