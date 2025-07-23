@@ -15,17 +15,14 @@ interface Account {
   company_name?: string;
   is_active: boolean;
 }
-
 interface Company {
   id: number;
   name: string;
   parent_id: number | null;
 }
-
 interface CompanyWithChildren extends Company {
   children?: CompanyWithChildren[];
 }
-
 function flattenCompanies(tree: CompanyWithChildren[]): Company[] {
   const result: Company[] = [];
   function traverse(node: CompanyWithChildren) {
@@ -58,12 +55,12 @@ export default function ManageAccountsPage() {
 
   const router = useRouter();
 
-  // 權限檢查（只有 admin 可以進入）
+  // 只允許 superadmin、company_admin 進入管理頁
   useEffect(() => {
     const localRole = localStorage.getItem("role") || "";
-    if (localRole !== "admin") {
+    if (localRole !== "superadmin" && localRole !== "company_admin") {
       toast.error("你沒有權限進入帳號管理頁面");
-      router.replace("/"); // 或 "/login"
+      router.replace("/");
       return;
     }
     setRole(localRole);
@@ -73,7 +70,7 @@ export default function ManageAccountsPage() {
     // eslint-disable-next-line
   }, [router]);
 
-  // 工具：取所有下層公司id
+  // 展平公司工具：遞迴取得所有下層公司 id
   function getDescendantCompanyIds(companies: Company[], rootId: number): number[] {
     const result: number[] = [];
     function traverse(id: number) {
@@ -116,12 +113,13 @@ export default function ManageAccountsPage() {
     setLoading(false);
   };
 
-  // 可選公司清單
-  const selectableCompanyIds = role === "admin"
-    ? companies.map(c => c.id)
-    : myCompanyId
-      ? getDescendantCompanyIds(companies, myCompanyId)
-      : [];
+  // 根據權限分流可選公司
+  const selectableCompanyIds =
+    role === "superadmin"
+      ? companies.map(c => c.id)
+      : myCompanyId
+        ? getDescendantCompanyIds(companies, myCompanyId)
+        : [];
   const selectableCompanies = companies.filter(c => selectableCompanyIds.includes(c.id));
 
   // 取得帳號清單
@@ -132,9 +130,10 @@ export default function ManageAccountsPage() {
       );
       if (!res.ok) throw new Error("取得帳號資料失敗");
       const data = await res.json();
+      // 這邊排序可改成 superadmin/company_admin 優先
       data.sort((a: Account, b: Account) => {
-        if (a.role === 'admin') return -1;
-        if (b.role === 'admin') return 1;
+        if (a.role === 'superadmin' || a.role === 'company_admin') return -1;
+        if (b.role === 'superadmin' || b.role === 'company_admin') return 1;
         return a.id - b.id;
       });
       setAccounts(data || []);
@@ -167,7 +166,7 @@ export default function ManageAccountsPage() {
         setNewUsername("");
         setNewPassword("");
         setNewRole("sales");
-        setNewCompanyId(myCompanyId); // 預設回自己公司
+        setNewCompanyId(myCompanyId);
         await fetchAccounts();
       } else {
         const errorData = await res.json();
@@ -269,14 +268,15 @@ export default function ManageAccountsPage() {
           >
             <option value="sales">sales</option>
             <option value="engineer">engineer</option>
-            <option value="admin">admin</option>
+            <option value="company_admin">company_admin</option>
+            <option value="superadmin">superadmin</option>
           </select>
           {/* 公司下拉選單（根據分權） */}
           <select
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm"
             value={newCompanyId ?? ""}
             onChange={e => setNewCompanyId(Number(e.target.value))}
-            disabled={role !== "admin" && selectableCompanies.length === 1}
+            disabled={role !== "superadmin" && selectableCompanies.length === 1}
           >
             <option value="">選擇公司</option>
             {selectableCompanies.map(c => (
@@ -304,7 +304,8 @@ export default function ManageAccountsPage() {
                   >
                     <option value="sales">sales</option>
                     <option value="engineer">engineer</option>
-                    <option value="admin">admin</option>
+                    <option value="company_admin">company_admin</option>
+                    <option value="superadmin">superadmin</option>
                   </select>
                   <label className="flex items-center gap-2">
                     <input
