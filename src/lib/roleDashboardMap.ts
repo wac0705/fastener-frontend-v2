@@ -14,8 +14,8 @@ export type DashboardItem = {
 export const ROLE_DASHBOARD_MAP: Record<string, DashboardItem[]> = {
   superadmin: [
     { name: "帳號管理", path: "/dashboard/manage-accounts" },
-    { name: "公司組織", path: "/dashboard/companies" },
-    { name: "全部客戶", path: "/dashboard/customers" },
+    { name: "公司組織", path: "/dashboard/definitions/companies" },
+    { name: "全部客戶", path: "/dashboard/definitions/customers" },
     { name: "系統日誌", path: "/dashboard/system-log" },
   ],
   company_admin: [
