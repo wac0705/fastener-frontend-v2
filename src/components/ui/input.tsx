@@ -1,7 +1,7 @@
 import * as React from "react"
 
-// 👇 直接宣告 cn，不要 import
-function cn(...inputs: any[]): string {
+// ↓ 直接宣告 cn，型別安全不報錯
+function cn(...inputs: (string | false | null | undefined)[]): string {
   return inputs.filter(Boolean).join(" ");
 }
 
