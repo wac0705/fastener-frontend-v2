@@ -24,6 +24,23 @@ interface Company {
   parent_id: number | null;
 }
 
+// ⭐️ 加在這裡（展平樹狀公司資料）
+function flattenCompanies(tree: any[]): Company[] {
+  const result: Company[] = [];
+  function traverse(node: any) {
+    result.push({
+      id: node.id,
+      name: node.name,
+      parent_id: node.parent_id,
+    });
+    if (Array.isArray(node.children)) {
+      node.children.forEach(traverse);
+    }
+  }
+  tree.forEach(traverse);
+  return result;
+}
+
 export default function ManageAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -78,7 +95,8 @@ export default function ManageAccountsPage() {
         );
         if (res.ok) {
           const data = await res.json();
-          setCompanies(data);
+          const flat = flattenCompanies(data); // ★ 展平公司樹狀資料
+          setCompanies(flat);
           setNewCompanyId(companyId); // 新增預設自己公司
         }
       } catch {
