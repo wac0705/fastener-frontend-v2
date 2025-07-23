@@ -13,7 +13,7 @@ interface Account {
   username: string;
   role: string;
   company_id: number;
-  company_name?: string; // 若後端有回
+  company_name?: string;
   is_active: boolean;
 }
 
@@ -24,10 +24,15 @@ interface Company {
   parent_id: number | null;
 }
 
-// ⭐️ 加在這裡（展平樹狀公司資料）
-function flattenCompanies(tree: any[]): Company[] {
+// 遞迴型別：支援 children
+interface CompanyWithChildren extends Company {
+  children?: CompanyWithChildren[];
+}
+
+// 展平樹狀公司資料
+function flattenCompanies(tree: CompanyWithChildren[]): Company[] {
   const result: Company[] = [];
-  function traverse(node: any) {
+  function traverse(node: CompanyWithChildren) {
     result.push({
       id: node.id,
       name: node.name,
@@ -94,10 +99,10 @@ export default function ManageAccountsPage() {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/definitions/companies`
         );
         if (res.ok) {
-          const data = await res.json();
-          const flat = flattenCompanies(data); // ★ 展平公司樹狀資料
+          const data: CompanyWithChildren[] = await res.json();
+          const flat = flattenCompanies(data);
           setCompanies(flat);
-          setNewCompanyId(companyId); // 新增預設自己公司
+          setNewCompanyId(companyId);
         }
       } catch {
         toast.error("取得公司清單失敗");
