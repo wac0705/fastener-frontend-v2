@@ -1,4 +1,3 @@
-// src/components/ui/dialog.tsx
 "use client"
 
 import * as React from "react"
@@ -9,11 +8,11 @@ function cn(...classes: (string | undefined | false | null)[]) {
 }
 
 const Dialog = DialogPrimitive.Root
-
 const DialogTrigger = DialogPrimitive.Trigger
 
-const DialogPortal = ({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>) => (
-  <DialogPrimitive.Portal className={cn(className)} {...props} />
+// ★ 這裡不用 className
+const DialogPortal = (props: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>) => (
+  <DialogPrimitive.Portal {...props} />
 )
 
 const DialogOverlay = React.forwardRef<
