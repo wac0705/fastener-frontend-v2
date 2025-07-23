@@ -1,4 +1,3 @@
-// fastener-frontend-v2-main/src/app/page.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -16,12 +15,14 @@ export default function Home() {
       return;
     }
 
-    if (role === "admin") {
-      router.push("/manage-accounts");
+    // superadmin 或 company_admin → 帳號管理
+    if (role === "superadmin" || role === "company_admin") {
+      router.push("/dashboard/manage-accounts");
     } else {
-      router.push("/quote-overview"); // 你可以換成你要的主頁
+      // 其他角色導首頁或你有的 dashboard 頁
+      router.push("/dashboard"); // 或 "/"
     }
-  }, [router]); // 【修正處】將 router 加入 dependency array
+  }, [router]);
 
   return (
     <main className="flex h-screen items-center justify-center">
