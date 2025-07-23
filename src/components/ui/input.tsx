@@ -1,6 +1,9 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+// 👇 直接宣告 cn，不要 import
+function cn(...inputs: any[]): string {
+  return inputs.filter(Boolean).join(" ");
+}
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
