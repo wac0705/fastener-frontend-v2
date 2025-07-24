@@ -1,109 +1,144 @@
-// src/app/dashboard/role-menus/page.tsx
-"use client";
-import { useEffect, useState } from "react";
-import { fetchRoles, fetchRoleMenus, updateRoleMenus } from "@/lib/api-roles";
-import { fetchMenus } from "@/lib/api-menus";
-import { Menu, Role } from "@/lib/types";
+// fastener-frontend-v2/src/app/dashboard/role-menus/page.tsx
+
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { getAllRoles, getRoleMenus, updateRoleMenus } from '@/lib/api-roles';
+import { getAllMenusTree } from '@/lib/api-menus';
+import { Role, Menu as MenuType } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from 'sonner';
+
+// 遞迴渲染選單樹與 Checkbox
+const MenuTree = ({ items, checkedKeys, onCheckChange }: { items: MenuType[], checkedKeys: number[], onCheckChange: (id: number, checked: boolean) => void }) => {
+  return (
+    <ul className="space-y-2">
+      {items.map(item => (
+        <li key={item.id} className="ml-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={`menu-${item.id}`}
+              checked={checkedKeys.includes(item.id)}
+              onCheckedChange={(checked) => onCheckChange(item.id, !!checked)}
+            />
+            <label htmlFor={`menu-${item.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              {item.name}
+            </label>
+          </div>
+          {item.children && item.children.length > 0 && (
+            <MenuTree items={item.children} checkedKeys={checkedKeys} onCheckChange={onCheckChange} />
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 
 export default function RoleMenusPage() {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [menus, setMenus] = useState<Menu[]>([]);
-  const [selectedRoleId, setSelectedRoleId] = useState<number>();
+  const [menus, setMenus] = useState<MenuType[]>([]);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [checkedMenuIds, setCheckedMenuIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 初始化取所有角色、所有 menu
   useEffect(() => {
-    fetchRoles().then(setRoles);
-    fetchMenus().then(setMenus);
+    const fetchData = async () => {
+      try {
+        const [rolesData, menusData] = await Promise.all([
+          getAllRoles(),
+          getAllMenusTree(), // 使用獲取樹狀結構的 API
+        ]);
+        setRoles(rolesData);
+        setMenus(menusData);
+      } catch (error) {
+        toast.error('無法載入基礎資料');
+      }
+    };
+    fetchData();
   }, []);
 
-  // 選角色時查目前權限
-  useEffect(() => {
-    if (selectedRoleId) {
-      setLoading(true);
-      fetchRoleMenus(selectedRoleId)
-        .then((ids) => setCheckedMenuIds(ids))
-        .finally(() => setLoading(false));
+  const handleRoleClick = async (role: Role) => {
+    setSelectedRole(role);
+    try {
+      const assignedMenus = await getRoleMenus(role.id);
+      setCheckedMenuIds(assignedMenus.map(m => m.id));
+    } catch (error) {
+      toast.error(`無法獲取角色 ${role.name} 的權限`);
+      setCheckedMenuIds([]);
     }
-  }, [selectedRoleId]);
+  };
 
-  function handleToggle(menuId: number) {
-    setCheckedMenuIds((prev) =>
-      prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]
-    );
-  }
+  const handleCheckChange = (menuId: number, isChecked: boolean) => {
+    setCheckedMenuIds(prev => {
+        const newSet = new Set(prev);
+        if (isChecked) {
+            newSet.add(menuId);
+        } else {
+            newSet.delete(menuId);
+        }
+        return Array.from(newSet);
+    });
+  };
 
-  async function handleSave() {
-    if (!selectedRoleId) return;
+  const handleSave = async () => {
+    if (!selectedRole) {
+      toast.warning('請先選擇一個角色');
+      return;
+    }
     setLoading(true);
     try {
-      await updateRoleMenus(selectedRoleId, checkedMenuIds);
-      alert("儲存成功！");
-    } catch {
-      alert("儲存失敗！");
+      await updateRoleMenus(selectedRole.id, checkedMenuIds);
+      toast.success(`角色 ${selectedRole.name} 的權限已更新`);
+    } catch (error) {
+      toast.error('儲存失敗');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  };
 
   return (
-    <main className="max-w-3xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">角色功能頁權限分配</h1>
-      <div className="flex gap-6">
-        {/* 角色清單 */}
-        <div className="w-48">
-          <h2 className="font-semibold mb-2">角色</h2>
-          <ul className="flex flex-col gap-1">
-            {roles.map((role) => (
+    <div className="container mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle>角色列表</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {roles.map(role => (
               <li key={role.id}>
-                <button
-                  className={`px-3 py-2 w-full text-left rounded ${
-                    selectedRoleId === role.id
-                      ? "bg-primary text-white"
-                      : "bg-muted text-gray-700"
-                  }`}
-                  onClick={() => setSelectedRoleId(role.id)}
+                <Button
+                  variant={selectedRole?.id === role.id ? 'default' : 'outline'}
+                  className="w-full justify-start"
+                  onClick={() => handleRoleClick(role)}
                 >
                   {role.name}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* menu 權限列表 */}
-        <div className="flex-1">
-          <h2 className="font-semibold mb-2">可分配功能頁</h2>
-          {loading ? (
-            <div>載入中...</div>
-          ) : !selectedRoleId ? (
-            <div className="text-gray-400">請先選擇角色</div>
+      <Card className="col-span-1 md:col-span-2">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>
+            {selectedRole ? `設定角色 "${selectedRole.name}" 的權限` : '請選擇一個角色'}
+          </CardTitle>
+          <Button onClick={handleSave} disabled={!selectedRole || loading}>
+            {loading ? '儲存中...' : '儲存變更'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {selectedRole ? (
+            <MenuTree items={menus} checkedKeys={checkedMenuIds} onCheckChange={handleCheckChange} />
           ) : (
-            <ul className="flex flex-col gap-2">
-              {menus.map((menu) => (
-                <li key={menu.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={checkedMenuIds.includes(menu.id)}
-                    onChange={() => handleToggle(menu.id)}
-                  />
-                  <span>
-                    {menu.name}
-                    <span className="text-xs text-gray-400 ml-2">{menu.path}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <p className="text-gray-500">從左側選擇一個角色以設定其可見的選單。</p>
           )}
-          <button
-            className="mt-6 px-4 py-2 rounded bg-primary text-white hover:bg-primary/80 disabled:bg-gray-400"
-            disabled={!selectedRoleId || loading}
-            onClick={handleSave}
-          >
-            儲存
-          </button>
-        </div>
-      </div>
-    </main>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
