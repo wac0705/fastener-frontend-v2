@@ -22,7 +22,7 @@ export interface Customer {
   updated_at: string;
 }
 
-// 為 Customer 列表頁面匯出一個別名，解決 CustomerListItem 的問題
+// 為 Customer 列表頁面匯出一個別名
 export type CustomerListItem = Customer;
 
 export interface ProductCategory {
@@ -32,7 +32,7 @@ export interface ProductCategory {
   description: string;
 }
 
-// 修正型別名稱以匹配前端元件的匯入
+// 根據前端元件的用法，補上所有缺少的欄位
 export interface CustomerTransactionTerm {
   id: number;
   customer_id: number;
@@ -40,6 +40,11 @@ export interface CustomerTransactionTerm {
   delivery_type: string;
   currency: string;
   notes: string;
+  // 根據錯誤日誌補上的欄位
+  incoterm: string;
+  currency_code: string;
+  commission_rate: number | null;
+  export_port: string;
 }
 
 // === 公司 (Company) 相關函式 ===
@@ -119,7 +124,7 @@ export async function createProductCategory(categoryData: Partial<ProductCategor
     const response = await fetchWithAuth(`${API_URL}/product-categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData),
+        body: JSON.stringify(categoryData),
     });
     if (!response.ok) { throw new Error('Failed to create product category'); }
     return response.json();
@@ -141,7 +146,6 @@ export async function deleteProductCategory(id: string | number): Promise<void> 
 }
 
 // === 客戶交易條件 (Customer Trade Terms) 相關函式 ===
-// 修正函式名稱以匹配前端元件的匯入
 export async function getCustomerTradeTerms(customerId: string | number): Promise<CustomerTransactionTerm[]> {
     const response = await fetchWithAuth(`${API_URL}/customers/${customerId}/tradeterms`);
     if (!response.ok) { throw new Error('Failed to fetch customer trade terms'); }
