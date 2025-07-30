@@ -27,12 +27,13 @@ export type CustomerListItem = Customer;
 
 export interface ProductCategory {
   id: number;
-  category_code: string; // 根據錯誤日誌，補上這個缺少的欄位
+  category_code: string;
   name: string;
   description: string;
 }
 
-export interface CustomerTradeTerm {
+// 修正型別名稱以匹配前端元件的匯入
+export interface CustomerTransactionTerm {
   id: number;
   customer_id: number;
   payment_type: string;
@@ -118,7 +119,7 @@ export async function createProductCategory(categoryData: Partial<ProductCategor
     const response = await fetchWithAuth(`${API_URL}/product-categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryData),
+        body: JSON.stringify(customerData),
     });
     if (!response.ok) { throw new Error('Failed to create product category'); }
     return response.json();
@@ -140,7 +141,8 @@ export async function deleteProductCategory(id: string | number): Promise<void> 
 }
 
 // === 客戶交易條件 (Customer Trade Terms) 相關函式 ===
-export async function getCustomerTradeTerms(customerId: string | number): Promise<CustomerTradeTerm[]> {
+// 修正函式名稱以匹配前端元件的匯入
+export async function getCustomerTradeTerms(customerId: string | number): Promise<CustomerTransactionTerm[]> {
     const response = await fetchWithAuth(`${API_URL}/customers/${customerId}/tradeterms`);
     if (!response.ok) { throw new Error('Failed to fetch customer trade terms'); }
     return response.json();
