@@ -1,9 +1,6 @@
 import * as React from "react"
 
-// ↓ 直接宣告 cn，型別安全不報錯
-function cn(...inputs: (string | false | null | undefined)[]): string {
-  return inputs.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
