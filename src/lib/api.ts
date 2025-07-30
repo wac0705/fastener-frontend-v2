@@ -1,23 +1,24 @@
 // src/lib/api.ts
 
 import { fetchWithAuth } from './fetchWithAuth';
-// 統一從 @/models 匯入所有資料模型
 import { Company } from '@/models/company';
 
-// --- 基礎設定 ---
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
-// --- 根據後端模型，定義精確的型別，取代 any ---
+// --- 根據後端模型，定義精確的型別 ---
 export interface Customer {
   id: number;
-  name: string;
   code: string;
+  name: string;
   address: string;
   phone_number: string;
   contact_person: string;
   email: string;
   tax_id: string;
   notes: string;
+  // 這次新增了缺少的欄位
+  group_customer_code: string;
+  group_customer_name: string;
 }
 
 export interface ProductCategory {
@@ -47,9 +48,7 @@ export async function getCompanies(): Promise<Company[]> {
 export async function createCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<Company> {
     const response = await fetchWithAuth(`${API_URL}/companies`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(companyData),
     });
     if (!response.ok) {
