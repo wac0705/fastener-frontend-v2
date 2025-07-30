@@ -5,7 +5,7 @@ import { Company } from '@/models/company';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
-// --- 根據後端模型，定義精確的型別 ---
+// --- 根據後端模型和前端頁面用法，定義最精確的型別 ---
 export interface Customer {
   id: number;
   code: string;
@@ -15,10 +15,11 @@ export interface Customer {
   contact_person: string;
   email: string;
   tax_id: string;
-  notes: string;
-  // 這次新增了缺少的欄位
+  remarks: string; // 根據前端頁面修正欄位名稱
   group_customer_code: string;
   group_customer_name: string;
+  created_at: string; // 新增時間戳
+  updated_at: string; // 新增時間戳
 }
 
 export interface ProductCategory {
