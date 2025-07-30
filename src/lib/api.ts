@@ -40,11 +40,14 @@ export interface CustomerTransactionTerm {
   delivery_type: string;
   currency: string;
   notes: string;
-  // 根據錯誤日誌補上的欄位
   incoterm: string;
   currency_code: string;
   commission_rate: number | null;
   export_port: string;
+  // 根據最新錯誤日誌補上的欄位
+  destination_country: string;
+  is_primary: boolean;
+  remarks: string;
 }
 
 // === 公司 (Company) 相關函式 ===
