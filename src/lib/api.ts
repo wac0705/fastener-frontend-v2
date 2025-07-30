@@ -1,156 +1,384 @@
 // src/lib/api.ts
+import { fetchWithAuth } from "./fetchWithAuth";
+import { toast } from "sonner";
 
-import { fetchWithAuth } from './fetchWithAuth';
-import { Company } from '@/models/company';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-
-// --- 根據後端模型和前端頁面用法，定義最精確的型別 ---
-export interface Customer {
+/* ========================= 公司 Company ========================= */
+export interface Company {
   id: number;
-  code: string;
   name: string;
-  address: string;
-  phone_number: string;
-  contact_person: string;
-  email: string;
-  tax_id: string;
-  remarks: string;
-  group_customer_code: string;
-  group_customer_name: string;
+  parent_id: number | null;
+  currency: string;
+  language: string;
   created_at: string;
   updated_at: string;
+  children?: Company[];
 }
 
-// 為 Customer 列表頁面匯出一個別名
-export type CustomerListItem = Customer;
+const apiBase = process.env.NEXT_PUBLIC_API_BASE || "";
 
-export interface ProductCategory {
-  id: number;
-  category_code: string;
-  name: string;
-  description: string;
-}
+export const getCompanies = async (): Promise<Company[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/companies`);
+    if (!res.ok) throw new Error("取得公司清單失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得公司清單失敗");
+    throw err;
+  }
+};
+export const createCompany = async (data: { name: string; parent_id: number | null; currency: string; language: string }): Promise<Company> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/companies`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("公司建立失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "公司建立失敗");
+    throw err;
+  }
+};
+export const updateCompany = async (
+  id: number,
+  data: { name: string; parent_id: number | null; currency: string; language: string }
+): Promise<{ message: string }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/companies/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("公司更新失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "公司更新失敗");
+    throw err;
+  }
+};
+export const deleteCompany = async (id: number): Promise<{ message: string }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/companies/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("公司刪除失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "公司刪除失敗");
+    throw err;
+  }
+};
 
-// 根據前端元件的用法，補上所有缺少的欄位
+/* ========================= 客戶 Customer ========================= */
 export interface CustomerTransactionTerm {
   id: number;
   customer_id: number;
-  payment_type: string;
-  delivery_type: string;
-  currency: string;
-  notes: string;
+  company_id: number;
   incoterm: string;
   currency_code: string;
   commission_rate: number | null;
   export_port: string;
-  // 根據最新錯誤日誌補上的欄位
   destination_country: string;
   is_primary: boolean;
   remarks: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// === 公司 (Company) 相關函式 ===
-export async function getCompanies(): Promise<Company[]> {
-  const response = await fetchWithAuth(`${API_URL}/companies`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch companies');
+export interface Customer {
+  id: number;
+  group_customer_code: string;
+  group_customer_name: string;
+  remarks: string;
+  created_at: string;
+  updated_at: string;
+  transaction_terms: CustomerTransactionTerm[];
+}
+export type CustomerListItem = Omit<Customer, "transaction_terms">;
+
+export const getCustomers = async (): Promise<CustomerListItem[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers`);
+    if (!res.ok) throw new Error("取得客戶清單失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得客戶清單失敗");
+    throw err;
   }
-  return response.json();
-}
+};
 
-export async function createCompany(companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>): Promise<Company> {
-    const response = await fetchWithAuth(`${API_URL}/companies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(companyData),
+export const getCustomerById = async (id: string | number): Promise<Customer> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${id}`);
+    if (!res.ok) throw new Error("取得客戶資料失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得客戶資料失敗");
+    throw err;
+  }
+};
+
+export const getCustomerByCode = async (code: string): Promise<Customer> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/code/${code}`);
+    if (!res.ok) throw new Error("取得客戶資料失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得客戶資料失敗");
+    throw err;
+  }
+};
+
+export const createCustomer = async (
+  data: Omit<Customer, "id" | "created_at" | "updated_at" | "transaction_terms">
+): Promise<Customer> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create company');
-    }
-    return response.json();
-}
-
-// === 客戶 (Customer) 相關函式 ===
-export async function getCustomers(): Promise<Customer[]> {
-  const response = await fetchWithAuth(`${API_URL}/customers`);
-  if (!response.ok) { throw new Error('Failed to fetch customers'); }
-  return response.json();
-}
-
-export async function getCustomerById(id: string | number): Promise<Customer> {
-    const response = await fetchWithAuth(`${API_URL}/customers/${id}`);
-    if (!response.ok) { throw new Error('Failed to fetch customer by ID'); }
-    return response.json();
-}
-
-export async function getCustomerByCode(code: string): Promise<Customer> {
-    const response = await fetchWithAuth(`${API_URL}/customers/code/${code}`);
-    if (!response.ok) { throw new Error('Failed to fetch customer by code'); }
-    return response.json();
-}
-
-export async function createCustomer(customerData: Partial<Customer>): Promise<Customer> {
-    const response = await fetchWithAuth(`${API_URL}/customers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData),
+    if (!res.ok) throw new Error("建立客戶失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "建立客戶失敗");
+    throw err;
+  }
+};
+export const updateCustomer = async (
+  id: string | number,
+  data: Omit<Customer, "id" | "created_at" | "updated_at" | "transaction_terms">
+): Promise<Customer> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
-    if (!response.ok) { throw new Error('Failed to create customer'); }
-    return response.json();
-}
-
-export async function updateCustomer(id: string | number, customerData: Partial<Customer>): Promise<Customer> {
-    const response = await fetchWithAuth(`${API_URL}/customers/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData),
+    if (!res.ok) throw new Error("更新客戶失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "更新客戶失敗");
+    throw err;
+  }
+};
+export const deleteCustomer = async (id: string | number): Promise<{ success: true }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${id}`, {
+      method: "DELETE",
     });
-    if (!response.ok) { throw new Error('Failed to update customer'); }
-    return response.json();
-}
+    if (!res.ok) throw new Error("刪除客戶失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "刪除客戶失敗");
+    throw err;
+  }
+};
 
-export async function deleteCustomer(id: string | number): Promise<void> {
-    const response = await fetchWithAuth(`${API_URL}/customers/${id}`, { method: 'DELETE' });
-    if (!response.ok) { throw new Error('Failed to delete customer'); }
-}
-
-// === 產品類別 (Product Category) 相關函式 ===
-export async function getProductCategories(): Promise<ProductCategory[]> {
-    const response = await fetchWithAuth(`${API_URL}/product-categories`);
-    if (!response.ok) { throw new Error('Failed to fetch product categories'); }
-    return response.json();
-}
-
-export async function createProductCategory(categoryData: Partial<ProductCategory>): Promise<ProductCategory> {
-    const response = await fetchWithAuth(`${API_URL}/product-categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryData),
+/* ===== 客戶交易條件 Customer Transaction Terms ===== */
+export const getCustomerTradeTerms = async (customerId: string | number): Promise<CustomerTransactionTerm[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${customerId}/transaction-terms`);
+    if (!res.ok) throw new Error("取得交易條件失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得交易條件失敗");
+    throw err;
+  }
+};
+export const createCustomerTradeTerm = async (
+  customerId: string | number,
+  data: Omit<CustomerTransactionTerm, "id" | "customer_id" | "created_at" | "updated_at" | "is_primary">
+): Promise<CustomerTransactionTerm> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${customerId}/transaction-terms`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
-    if (!response.ok) { throw new Error('Failed to create product category'); }
-    return response.json();
-}
-
-export async function updateProductCategory(id: string | number, categoryData: Partial<ProductCategory>): Promise<ProductCategory> {
-    const response = await fetchWithAuth(`${API_URL}/product-categories/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoryData),
+    if (!res.ok) throw new Error("新增交易條件失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "新增交易條件失敗");
+    throw err;
+  }
+};
+export const updateCustomerTradeTerm = async (
+  id: string | number,
+  data: Omit<CustomerTransactionTerm, "id" | "customer_id" | "created_at" | "updated_at" | "is_primary">
+): Promise<CustomerTransactionTerm> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/transaction-terms/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
-    if (!response.ok) { throw new Error('Failed to update product category'); }
-    return response.json();
-}
+    if (!res.ok) throw new Error("更新交易條件失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "更新交易條件失敗");
+    throw err;
+  }
+};
+export const deleteCustomerTradeTerm = async (id: string | number): Promise<{ success: true }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/transaction-terms/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("刪除交易條件失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "刪除交易條件失敗");
+    throw err;
+  }
+};
+export const setPrimaryTradeTerm = async (customerId: string | number, id: string | number): Promise<{ success: true }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/customers/${customerId}/transaction-terms/${id}/set-primary`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("設主交易條件失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "設主交易條件失敗");
+    throw err;
+  }
+};
 
-export async function deleteProductCategory(id: string | number): Promise<void> {
-    const response = await fetchWithAuth(`${API_URL}/product-categories/${id}`, { method: 'DELETE' });
-    if (!response.ok) { throw new Error('Failed to delete product category'); }
+/* ========================= 產品定義 Product Definitions ========================= */
+export interface ProductCategory {
+  id: number;
+  category_code: string;
+  name: string;
 }
+export const getProductCategories = async (): Promise<ProductCategory[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-categories`);
+    if (!res.ok) throw new Error("取得產品分類失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得產品分類失敗");
+    throw err;
+  }
+};
+export const createProductCategory = async (data: Omit<ProductCategory, "id">): Promise<ProductCategory> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-categories`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("建立產品分類失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "建立產品分類失敗");
+    throw err;
+  }
+};
+export const updateProductCategory = async (id: number, data: Omit<ProductCategory, "id">): Promise<ProductCategory> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-categories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("更新產品分類失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "更新產品分類失敗");
+    throw err;
+  }
+};
+export const deleteProductCategory = async (id: number): Promise<{ success: true }> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-categories/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("刪除產品分類失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "刪除產品分類失敗");
+    throw err;
+  }
+};
 
-// === 客戶交易條件 (Customer Trade Terms) 相關函式 ===
-export async function getCustomerTradeTerms(customerId: string | number): Promise<CustomerTransactionTerm[]> {
-    const response = await fetchWithAuth(`${API_URL}/customers/${customerId}/tradeterms`);
-    if (!response.ok) { throw new Error('Failed to fetch customer trade terms'); }
-    return response.json();
+export interface ProductShape {
+  id: number;
+  shape_code: string;
+  name: string;
 }
+export const getProductShapes = async (): Promise<ProductShape[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-shapes`);
+    if (!res.ok) throw new Error("取得產品形狀失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得產品形狀失敗");
+    throw err;
+  }
+};
+export const createProductShape = async (data: Omit<ProductShape, "id">): Promise<ProductShape> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-shapes`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("建立產品形狀失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "建立產品形狀失敗");
+    throw err;
+  }
+};
+
+export interface ProductFunction {
+  id: number;
+  function_code: string;
+  name: string;
+}
+export const getProductFunctions = async (): Promise<ProductFunction[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-functions`);
+    if (!res.ok) throw new Error("取得產品功能失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得產品功能失敗");
+    throw err;
+  }
+};
+export const createProductFunction = async (data: Omit<ProductFunction, "id">): Promise<ProductFunction> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-functions`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("建立產品功能失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "建立產品功能失敗");
+    throw err;
+  }
+};
+
+export interface ProductSpecification {
+  id: number;
+  spec_code: string;
+  name: string;
+  parent_id: number | null;
+}
+export const getProductSpecifications = async (): Promise<ProductSpecification[]> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-specifications`);
+    if (!res.ok) throw new Error("取得產品規格失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "取得產品規格失敗");
+    throw err;
+  }
+};
+export const createProductSpecification = async (data: Omit<ProductSpecification, "id">): Promise<ProductSpecification> => {
+  try {
+    const res = await fetchWithAuth(`${apiBase}/api/definitions/product-specifications`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("建立產品規格失敗");
+    return await res.json();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "建立產品規格失敗");
+    throw err;
+  }
+};
